@@ -1,5 +1,4 @@
 // Configuración de tu proyecto de Firebase
-// Configuración de tu proyecto de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDy1bb0WVL9_HYg59TuA0dIi1d4ekVIa0E",
     authDomain: "registro-de-salidas-884cf.firebaseapp.com",
@@ -10,20 +9,11 @@ const firebaseConfig = {
     measurementId: "G-Y5HZCX7FRT"
 };
 
-// Inicializar Firebase y Firestore
+// Inicializar Firebase y Firestore de forma segura
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.firestore();
-const salidasRef = db.collection('salidas');
-
-// ... el resto de tu código de app.js sigue aquí ...
-
-// Inicializar Firebase y Firestore
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// Referencia a la colección 'salidas'
 const salidasRef = db.collection('salidas');
 
 // Elementos DOM
@@ -44,17 +34,25 @@ if (!usuarioActual) {
 }
 
 // Mostrar el nombre guardado en la interfaz
-userDisplay.textContent = usuarioActual;
-userInfo.style.display = 'block';
+if (userDisplay && userInfo) {
+    userDisplay.textContent = usuarioActual;
+    userInfo.style.display = 'block';
+}
 
 // 2. Registrar nueva salida
 formSalida.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const producto = document.getElementById('producto-nombre').value.trim();
-    const cantidad = parseInt(document.getElementById('cantidad-salida').value, 10);
+    const productoInput = document.getElementById('producto-nombre');
+    const cantidadInput = document.getElementById('cantidad-salida');
 
-    if (!producto || cantidad <= 0) return;
+    const producto = productoInput.value.trim();
+    const cantidad = parseInt(cantidadInput.value, 10);
+
+    if (!producto || isNaN(cantidad) || cantidad <= 0) {
+        alert("Por favor completa los campos correctamente.");
+        return;
+    }
 
     try {
         await salidasRef.add({
@@ -65,10 +63,10 @@ formSalida.addEventListener('submit', async (e) => {
         });
 
         formSalida.reset();
-        document.getElementById('cantidad-salida').value = "1";
+        cantidadInput.value = "1";
     } catch (error) {
         console.error("Error al registrar la salida: ", error);
-        alert("Ocurrió un error al guardar el registro.");
+        alert("Ocurrió un error al guardar el registro: " + error.message);
     }
 });
 
@@ -112,4 +110,5 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     });
 }, (error) => {
     console.error("Error al obtener historial: ", error);
+    listaHistorial.innerHTML = `<li style="color:red; text-align:center; padding: 10px;">Error al cargar historial: ${error.message}</li>`;
 });
