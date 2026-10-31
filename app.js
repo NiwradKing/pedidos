@@ -9,6 +9,9 @@ const firebaseConfig = {
     measurementId: "G-Y5HZCX7FRT"
 };
 
+// Contraseña requerida para ingresar al sistema (puedes cambiarla aquí)
+const CONTRASENA_SISTEMA = "1234";
+
 // Inicializar Firebase y Firestore
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
@@ -17,33 +20,74 @@ const db = firebase.firestore();
 const salidasRef = db.collection('salidas');
 
 // Elementos DOM
+const loginScreen = document.getElementById('login-screen');
+const mainApp = document.getElementById('main-app');
+const formLogin = document.getElementById('form-login');
+const inputPassword = document.getElementById('input-password');
+const btnLogout = document.getElementById('btn-logout');
+
 const formSalida = document.getElementById('form-salida');
 const listaHistorial = document.getElementById('lista-historial');
 const bodyTotales = document.getElementById('body-totales');
-const userInfo = document.getElementById('user-info');
 const userDisplay = document.getElementById('user-display');
 
-// 1. Gestión del Nombre y Rol del Usuario (Persistencia local)
+// Función aux para formatear moneda COP
+const formatoMoneda = (valor) => {
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
+};
+
+// Comprobar si ya está autenticado en esta sesión del navegador
+let sesionActiva = sessionStorage.getItem('sesion_autorizada');
 let usuarioActual = localStorage.getItem('usuario_salidas');
 let rolActual = localStorage.getItem('rol_salidas');
 
-if (!usuarioActual || !rolActual) {
-    while (!usuarioActual || usuarioActual.trim() === '') {
-        usuarioActual = prompt('Ingresa tu nombre para continuar (no se podrá cambiar):');
+if (sesionActiva === 'true' && usuarioActual && rolActual) {
+    mostrarAplicacion();
+}
+
+// 1. Manejar el inicio de sesión con contraseña
+formLogin.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const passwordIngresada = inputPassword.value.trim();
+
+    if (passwordIngresada !== CONTRASENA_SISTEMA) {
+        alert("Contraseña incorrecta. Intenta nuevamente.");
+        inputPassword.value = '';
+        return;
     }
-    usuarioActual = usuarioActual.trim();
-    
-    let eleccionRol = prompt('Selecciona tu rol:\n1. Operador\n2. Administrador', '1');
-    rolActual = (eleccionRol === '2') ? 'Administrador' : 'Operador';
 
-    localStorage.setItem('usuario_salidas', usuarioActual);
-    localStorage.setItem('rol_salidas', rolActual);
-}
+    // Si la contraseña es correcta, pedir nombre y rol si no están guardados
+    if (!usuarioActual || !rolActual) {
+        while (!usuarioActual || usuarioActual.trim() === '') {
+            usuarioActual = prompt('Ingresa tu nombre para continuar:');
+        }
+        usuarioActual = usuarioActual.trim();
+        
+        let eleccionRol = prompt('Selecciona tu rol:\n1. Operador\n2. Administrador', '1');
+        rolActual = (eleccionRol === '2') ? 'Administrador' : 'Operador';
 
-if (userDisplay && userInfo) {
+        localStorage.setItem('usuario_salidas', usuarioActual);
+        localStorage.setItem('rol_salidas', rolActual);
+    }
+
+    sessionStorage.setItem('sesion_autorizada', 'true');
+    inputPassword.value = '';
+    mostrarAplicacion();
+});
+
+function mostrarAplicacion() {
+    loginScreen.style.display = 'none';
+    mainApp.style.display = 'block';
     userDisplay.textContent = `${usuarioActual} (${rolActual})`;
-    userInfo.style.display = 'block';
 }
+
+// Botón de cerrar sesión
+btnLogout.addEventListener('click', () => {
+    sessionStorage.removeItem('sesion_autorizada');
+    mainApp.style.display = 'none';
+    loginScreen.style.display = 'block';
+    inputPassword.value = '';
+});
 
 // 2. Registrar nueva salida
 formSalida.addEventListener('submit', async (e) => {
@@ -51,11 +95,13 @@ formSalida.addEventListener('submit', async (e) => {
 
     const productoInput = document.getElementById('producto-nombre');
     const cantidadInput = document.getElementById('cantidad-salida');
+    const precioInput = document.getElementById('precio-salida');
 
     const producto = productoInput.value.trim();
     const cantidad = parseInt(cantidadInput.value, 10);
+    const precio = parseFloat(precioInput.value);
 
-    if (!producto || isNaN(cantidad) || cantidad <= 0) {
+    if (!producto || isNaN(cantidad) || cantidad <= 0 || isNaN(precio) || precio < 0) {
         alert("Por favor completa los campos correctamente.");
         return;
     }
@@ -64,6 +110,8 @@ formSalida.addEventListener('submit', async (e) => {
         await salidasRef.add({
             producto: producto,
             cantidad: cantidad,
+            precioUnitario: precio,
+            totalPrecio: cantidad * precio,
             usuario: usuarioActual,
             rol: rolActual,
             fecha: firebase.firestore.FieldValue.serverTimestamp()
@@ -100,7 +148,7 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     
     if (snapshot.empty) {
         listaHistorial.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No hay registros de salidas aún.</li>';
-        bodyTotales.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td></tr>';
+        bodyTotales.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td></tr>';
         return;
     }
 
@@ -129,49 +177,71 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
             }
         }
 
-        // Acumular totales del día actual por producto
+        const precioUnitario = item.precioUnitario || 0;
+        const totalFila = item.totalPrecio || (item.cantidad * precioUnitario);
+
         if (esDeHoy && item.producto) {
             const claveProd = item.producto.trim();
-            totalesHoy[claveProd] = (totalesHoy[claveProd] || 0) + (item.cantidad || 0);
+            if (!totalesHoy[claveProd]) {
+                totalesHoy[claveProd] = { cantidad: 0, dinero: 0 };
+            }
+            totalesHoy[claveProd].cantidad += (item.cantidad || 0);
+            totalesHoy[claveProd].dinero += totalFila;
         }
 
-        // Botón de eliminar habilitado solo para Administradores
         let botonEliminar = '';
         if (rolActual === 'Administrador') {
             botonEliminar = `<button onclick="eliminarRegistro('${docId}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-top:5px;">🗑️ Eliminar</button>`;
         }
 
-        // Renderizar item en el historial
         const li = document.createElement('li');
         li.className = 'item-row';
         li.innerHTML = `
             <div>
                 <span class="item-name">${item.producto}</span>
                 <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong> (${item.rol || 'Operador'})</small>
+                <br><small style="color:#64748b;">Precio c/u: ${formatoMoneda(precioUnitario)}</small>
                 <br><small style="color:#94a3b8;">${fechaFormateada}</small>
                 ${botonEliminar ? '<br>' + botonEliminar : ''}
             </div>
-            <span class="stock-badge">-${item.cantidad} u.</span>
+            <div style="text-align: right;">
+                <span class="stock-badge">-${item.cantidad} u.</span>
+                <br><strong style="color: #0f172a; font-size: 13px;">${formatoMoneda(totalFila)}</strong>
+            </div>
         `;
         listaHistorial.appendChild(li);
     });
 
-    // Renderizar Tabla de Totales del Día
     bodyTotales.innerHTML = '';
     const productosHoy = Object.keys(totalesHoy);
 
     if (productosHoy.length === 0) {
-        bodyTotales.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td></tr>';
+        bodyTotales.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td></tr>';
     } else {
+        let granTotalDinero = 0;
+
         productosHoy.forEach((prod) => {
+            const datos = totalesHoy[prod];
+            granTotalDinero += datos.dinero;
+
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #f1f5f9';
             tr.innerHTML = `
                 <td style="padding: 8px; font-weight: 600;">${prod}</td>
-                <td style="padding: 8px; text-align: right; color: #ef4444; font-weight: bold;">-${totalesHoy[prod]} u.</td>
+                <td style="padding: 8px; text-align: center; color: #ef4444; font-weight: bold;">-${datos.cantidad} u.</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #0f172a;">${formatoMoneda(datos.dinero)}</td>
             `;
             bodyTotales.appendChild(tr);
         });
+
+        const trTotal = document.createElement('tr');
+        trTotal.style.background = '#f8fafc';
+        trTotal.style.fontWeight = 'bold';
+        trTotal.innerHTML = `
+            <td colspan="2" style="padding: 10px; text-align: right; color: #334155;">TOTAL DEL DÍA:</td>
+            <td style="padding: 10px; text-align: right; color: #16a34a; font-size: 15px;">${formatoMoneda(granTotalDinero)}</td>
+        `;
+        bodyTotales.appendChild(trTotal);
     }
 
 }, (error) => {
