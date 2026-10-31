@@ -22,20 +22,27 @@ const listaHistorial = document.getElementById('lista-historial');
 const userInfo = document.getElementById('user-info');
 const userDisplay = document.getElementById('user-display');
 
-// 1. Gestión del Nombre de Usuario (Inmutable tras el primer inicio)
+// 1. Gestión del Nombre y Rol del Usuario (Inmutable tras el primer inicio)
 let usuarioActual = localStorage.getItem('usuario_salidas');
+let rolActual = localStorage.getItem('rol_salidas');
 
-if (!usuarioActual) {
+if (!usuarioActual || !rolActual) {
     while (!usuarioActual || usuarioActual.trim() === '') {
-        usuarioActual = prompt('Por favor, ingresa tu nombre de usuario para continuar (no se podrá cambiar):');
+        usuarioActual = prompt('Ingresa tu nombre para continuar (no se podrá cambiar):');
     }
     usuarioActual = usuarioActual.trim();
+    
+    // Preguntar el rol de forma sencilla
+    let eleccionRol = prompt('Selecciona tu rol:\n1. Operador\n2. Administrador', '1');
+    rolActual = (eleccionRol === '2') ? 'Administrador' : 'Operador';
+
     localStorage.setItem('usuario_salidas', usuarioActual);
+    localStorage.setItem('rol_salidas', rolActual);
 }
 
-// Mostrar el nombre guardado en la interfaz
+// Mostrar el nombre y rol en la interfaz
 if (userDisplay && userInfo) {
-    userDisplay.textContent = usuarioActual;
+    userDisplay.textContent = `${usuarioActual} (${rolActual})`;
     userInfo.style.display = 'block';
 }
 
@@ -59,6 +66,7 @@ formSalida.addEventListener('submit', async (e) => {
             producto: producto,
             cantidad: cantidad,
             usuario: usuarioActual,
+            rol: rolActual,
             fecha: firebase.firestore.FieldValue.serverTimestamp()
         });
 
@@ -70,7 +78,24 @@ formSalida.addEventListener('submit', async (e) => {
     }
 });
 
-// 3. Escuchar e imprimir Historial en Tiempo Real (Ordenado de más reciente a antiguo)
+// Función global para que los administradores puedan eliminar un registro
+window.eliminarRegistro = async function(id) {
+    if (rolActual !== 'Administrador') {
+        alert("No tienes permisos de Administrador para eliminar registros.");
+        return;
+    }
+
+    if (confirm("¿Estás seguro de que deseas eliminar este registro del historial?")) {
+        try {
+            await salidasRef.doc(id).delete();
+        } catch (error) {
+            console.error("Error al eliminar: ", error);
+            alert("No se pudo eliminar el registro.");
+        }
+    }
+};
+
+// 3. Escuchar e imprimir Historial en Tiempo Real
 salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     listaHistorial.innerHTML = '';
 
@@ -81,8 +106,8 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
 
     snapshot.forEach((doc) => {
         const item = doc.data();
+        const docId = doc.id;
         
-        // Formatear Fecha y Hora
         let fechaFormateada = 'Procesando...';
         if (item.fecha) {
             const dateObj = item.fecha.toDate();
@@ -91,9 +116,14 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
                 month: '2-digit',
                 year: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
+                minute: '2-digit'
             });
+        }
+
+        // Si es administrador, agregamos un botón de eliminar visible en el historial
+        let botonEliminar = '';
+        if (rolActual === 'Administrador') {
+            botonEliminar = `<button onclick="eliminarRegistro('${docId}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-top:5px;">🗑️ Eliminar</button>`;
         }
 
         const li = document.createElement('li');
@@ -101,8 +131,9 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
         li.innerHTML = `
             <div>
                 <span class="item-name">${item.producto}</span>
-                <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong></small>
+                <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong> (${item.rol || 'Operador'})</small>
                 <br><small style="color:#94a3b8;">${fechaFormateada}</small>
+                ${botonEliminar ? '<br>' + botonEliminar : ''}
             </div>
             <span class="stock-badge">-${item.cantidad} u.</span>
         `;
