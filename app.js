@@ -1,5 +1,14 @@
 // Configuración de tu proyecto de Firebase
 const firebaseConfig = {
+    apiKey: "AIzaSy...",
+    authDomain: "tu-proyecto.firebaseapp.com",
+    projectId: "tu-proyecto",
+    storageBucket: "tu-proyecto.appspot.com",
+    messagingSenderId: "...",
+    appId: "..."
+};
+
+const firebaseConfig = {
     apiKey: "TU_API_KEY",
     authDomain: "TU_PROJECT_ID.firebaseapp.com",
     projectId: "TU_PROJECT_ID",
