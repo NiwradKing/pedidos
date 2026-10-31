@@ -11,59 +11,78 @@
 </head>
 <body>
     <div class="container">
-        <!-- Tarjeta de Usuario Activo -->
-        <div id="user-info" class="card" style="display: none; margin-bottom: 15px; background: #f8fafc; border-left: 4px solid #ef4444;">
-            <p style="margin: 0; font-size: 14px; color: #475569;">
-                Usuario activo: <strong id="user-display" style="color: #0f172a;"></strong>
-            </p>
-        </div>
-
-        <!-- Formulario de Registro -->
-        <div class="card">
-            <h2>Registrar Salida de Producto</h2>
-            <form id="form-salida">
+        
+        <!-- PANTALLA DE ACCESO / CONTRASEÑA -->
+        <div id="login-screen" class="card">
+            <h2>🔐 Acceso al Sistema</h2>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Por favor ingresa la contraseña para desbloquear el inventario.</p>
+            <form id="form-login">
                 <div class="form-group">
-                    <label for="producto-nombre">Nombre de la Bebida / Producto</label>
-                    <input type="text" id="producto-nombre" placeholder="Ej: Cerveza Poker, Gaseosa..." required>
+                    <label for="input-password">Contraseña de Acceso</label>
+                    <input type="password" id="input-password" placeholder="Contraseña..." required>
                 </div>
-                <div class="form-group">
-                    <label for="cantidad-salida">Cantidad a retirar</label>
-                    <input type="number" id="cantidad-salida" value="1" min="1" required>
-                </div>
-                <div class="form-group">
-                    <label for="precio-salida">Precio Unitario ($ COP)</label>
-                    <input type="number" id="precio-salida" placeholder="Ej: 3500" min="0" step="50" required>
-                </div>
-                <button type="submit" class="btn-submit">Registrar Salida</button>
+                <button type="submit" class="btn-submit" style="background: #0f172a;">Ingresar al Sistema</button>
             </form>
         </div>
 
-        <!-- Resumen Diario (Sumatoria del Día) -->
-        <div class="card" style="margin-top: 20px;">
-            <h2>Totales Retirados Hoy</h2>
-            <table id="tabla-totales-dia" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
-                        <th style="padding: 8px;">Producto</th>
-                        <th style="padding: 8px; text-align: center;">Cantidad</th>
-                        <th style="padding: 8px; text-align: right;">Total ($)</th>
-                    </tr>
-                </thead>
-                <tbody id="body-totales">
-                    <tr>
-                        <td colspan="3" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- CONTENIDO PRINCIPAL (Oculto hasta autenticarse) -->
+        <div id="main-app" style="display: none;">
+            <!-- Tarjeta de Usuario Activo -->
+            <div id="user-info" class="card" style="margin-bottom: 15px; background: #f8fafc; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center;">
+                <p style="margin: 0; font-size: 14px; color: #475569;">
+                    Usuario: <strong id="user-display" style="color: #0f172a;"></strong>
+                </p>
+                <button id="btn-logout" style="background: #64748b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Cerrar Sesión</button>
+            </div>
+
+            <!-- Formulario de Registro -->
+            <div class="card">
+                <h2>Registrar Salida de Producto</h2>
+                <form id="form-salida">
+                    <div class="form-group">
+                        <label for="producto-nombre">Nombre de la Bebida / Producto</label>
+                        <input type="text" id="producto-nombre" placeholder="Ej: Cerveza Poker, Gaseosa..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cantidad-salida">Cantidad a retirar</label>
+                        <input type="number" id="cantidad-salida" value="1" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="precio-salida">Precio Unitario ($ COP)</label>
+                        <input type="number" id="precio-salida" placeholder="Ej: 3500" min="0" step="50" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Registrar Salida</button>
+                </form>
+            </div>
+
+            <!-- Resumen Diario (Sumatoria del Día) -->
+            <div class="card" style="margin-top: 20px;">
+                <h2>Totales Retirados Hoy</h2>
+                <table id="tabla-totales-dia" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
+                            <th style="padding: 8px;">Producto</th>
+                            <th style="padding: 8px; text-align: center;">Cantidad</th>
+                            <th style="padding: 8px; text-align: right;">Total ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-totales">
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Historial en Tiempo Real -->
+            <div class="card" style="margin-top: 20px;">
+                <h2>Historial de Salidas en Tiempo Real</h2>
+                <ul id="lista-historial" class="history-list">
+                    <li style="text-align: center; color: #64748b; padding: 10px;">Cargando registros...</li>
+                </ul>
+            </div>
         </div>
 
-        <!-- Historial en Tiempo Real -->
-        <div class="card" style="margin-top: 20px;">
-            <h2>Historial de Salidas en Tiempo Real</h2>
-            <ul id="lista-historial" class="history-list">
-                <li style="text-align: center; color: #64748b; padding: 10px;">Cargando registros...</li>
-            </ul>
-        </div>
     </div>
 
     <!-- Archivo principal de JavaScript -->
