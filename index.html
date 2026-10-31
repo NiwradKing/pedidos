@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Salidas - Bodega</title>
+    <title>Registro de Salidas de Inventario</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Carga SDK de Firebase Compat v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
-
     <div class="container">
-        <!-- Indicador del Usuario -->
-        <div class="user-card" id="user-info" style="display: none;">
-            <span>Registrando como: <strong id="user-display"></strong></span>
+        <!-- Tarjeta de Usuario Activo -->
+        <div id="user-info" class="card" style="display: none; margin-bottom: 15px; background: #f8fafc; border-left: 4px solid #ef4444;">
+            <p style="margin: 0; font-size: 14px; color: #475569;">
+                Usuario activo: <strong id="user-display" style="color: #0f172a;"></strong>
+            </p>
         </div>
 
-        <!-- Formulario de Registro de Salida -->
+        <!-- Formulario de Registro -->
         <div class="card">
             <h2>Registrar Salida de Producto</h2>
             <form id="form-salida">
@@ -24,25 +28,40 @@
                 </div>
                 <div class="form-group">
                     <label for="cantidad-salida">Cantidad a retirar</label>
-                    <input type="number" id="cantidad-salida" min="1" value="1" required>
+                    <input type="number" id="cantidad-salida" value="1" min="1" required>
                 </div>
-                <button type="submit">Registrar Salida</button>
+                <button type="submit" class="btn-submit">Registrar Salida</button>
             </form>
         </div>
 
-        <!-- Historial de Salidas -->
-        <div class="card">
+        <!-- Resumen Diario (Sumatoria del Día) -->
+        <div class="card" style="margin-top: 20px;">
+            <h2>Totales Retirados Hoy</h2>
+            <table id="tabla-totales-dia" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
+                        <th style="padding: 8px;">Producto</th>
+                        <th style="padding: 8px; text-align: right;">Total Retirado</th>
+                    </tr>
+                </thead>
+                <tbody id="body-totales">
+                    <tr>
+                        <td colspan="2" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Historial en Tiempo Real -->
+        <div class="card" style="margin-top: 20px;">
             <h2>Historial de Salidas en Tiempo Real</h2>
-            <ul id="lista-historial" class="item-list">
-                <!-- Carga dinámica -->
+            <ul id="lista-historial" class="history-list">
+                <li style="text-align: center; color: #64748b; padding: 10px;">Cargando registros...</li>
             </ul>
         </div>
     </div>
 
-    <!-- Scripts de Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
+    <!-- Archivo principal de JavaScript -->
     <script src="app.js"></script>
 </body>
 </html>
