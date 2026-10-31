@@ -1,21 +1,23 @@
 // Configuración de tu proyecto de Firebase
+// Configuración de tu proyecto de Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSy...",
-    authDomain: "tu-proyecto.firebaseapp.com",
-    projectId: "tu-proyecto",
-    storageBucket: "tu-proyecto.appspot.com",
-    messagingSenderId: "...",
-    appId: "..."
+    apiKey: "AIzaSyDy1bb0WVL9_HYg59TuA0dIi1d4ekVIa0E",
+    authDomain: "registro-de-salidas-884cf.firebaseapp.com",
+    projectId: "registro-de-salidas-884cf",
+    storageBucket: "registro-de-salidas-884cf.firebasestorage.app",
+    messagingSenderId: "922399897406",
+    appId: "1:922399897406:web:84c442683526839a4c5e6f",
+    measurementId: "G-Y5HZCX7FRT"
 };
 
-const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "TU_PROJECT_ID.firebaseapp.com",
-    projectId: "TU_PROJECT_ID",
-    storageBucket: "TU_PROJECT_ID.appspot.com",
-    messagingSenderId: "TU_NUMERO",
-    appId: "TU_APP_ID"
-};
+// Inicializar Firebase y Firestore
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+const salidasRef = db.collection('salidas');
+
+// ... el resto de tu código de app.js sigue aquí ...
 
 // Inicializar Firebase y Firestore
 firebase.initializeApp(firebaseConfig);
