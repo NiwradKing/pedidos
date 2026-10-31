@@ -12,14 +12,18 @@
 <body>
     <div class="container">
         
-        <!-- PANTALLA DE ACCESO / CONTRASEÑA -->
+        <!-- PANTALLA DE ACCESO / LOGIN INDIVIDUAL -->
         <div id="login-screen" class="card">
-            <h2>🔐 Acceso al Sistema</h2>
-            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Por favor ingresa la contraseña para desbloquear el inventario.</p>
+            <h2>🔐 Iniciar Sesión</h2>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Ingresa tu usuario y contraseña personal.</p>
             <form id="form-login">
                 <div class="form-group">
-                    <label for="input-password">Contraseña de Acceso</label>
-                    <input type="password" id="input-password" placeholder="Contraseña..." required>
+                    <label for="input-usuario">Nombre de Usuario</label>
+                    <input type="text" id="input-usuario" placeholder="Ej: Darwin, Juan..." required>
+                </div>
+                <div class="form-group">
+                    <label for="input-password">Contraseña Personal</label>
+                    <input type="password" id="input-password" placeholder="Tu contraseña..." required>
                 </div>
                 <button type="submit" class="btn-submit" style="background: #0f172a;">Ingresar al Sistema</button>
             </form>
@@ -27,13 +31,13 @@
 
         <!-- CONTENIDO PRINCIPAL (Oculto hasta autenticarse) -->
         <div id="main-app" style="display: none;">
-            <!-- Tarjeta de Usuario Activo y Panel Admin -->
+            <!-- Tarjeta de Usuario Activo y Opciones de Cuenta -->
             <div id="user-info" class="card" style="margin-bottom: 15px; background: #f8fafc; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <p style="margin: 0; font-size: 14px; color: #475569;">
                     Usuario: <strong id="user-display" style="color: #0f172a;"></strong>
                 </p>
-                <div id="admin-controls" style="display: flex; gap: 5px; align-items: center;">
-                    <!-- Botón de cambiar contraseña (se inyecta por JS si es Admin) -->
+                <div id="user-controls" style="display: flex; gap: 5px; align-items: center;">
+                    <button id="btn-cambiar-pass" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">🔑 Cambiar Mi Contraseña</button>
                 </div>
                 <button id="btn-logout" style="background: #64748b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Cerrar Sesión</button>
             </div>

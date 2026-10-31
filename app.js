@@ -15,15 +15,16 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 const salidasRef = db.collection('salidas');
-const configRef = db.collection('config').doc('sistema'); // Referencia para guardar la contraseña en Firestore
+const usuariosRef = db.collection('usuarios'); // Colección para guardar cuentas de usuario independientes
 
 // Elementos DOM
 const loginScreen = document.getElementById('login-screen');
 const mainApp = document.getElementById('main-app');
 const formLogin = document.getElementById('form-login');
+const inputUsuario = document.getElementById('input-usuario');
 const inputPassword = document.getElementById('input-password');
 const btnLogout = document.getElementById('btn-logout');
-const adminControls = document.getElementById('admin-controls');
+const btnCambiarPass = document.getElementById('btn-cambiar-pass');
 
 const formSalida = document.getElementById('form-salida');
 const listaHistorial = document.getElementById('lista-historial');
@@ -35,7 +36,7 @@ const formatoMoneda = (valor) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
 };
 
-// Comprobar si ya está autenticado en esta sesión del navegador
+// Comprobar sesión activa previa en el navegador
 let sesionActiva = sessionStorage.getItem('sesion_autorizada');
 let usuarioActual = localStorage.getItem('usuario_salidas');
 let rolActual = localStorage.getItem('rol_salidas');
@@ -44,49 +45,63 @@ if (sesionActiva === 'true' && usuarioActual && rolActual) {
     mostrarAplicacion();
 }
 
-// 1. Manejar el inicio de sesión con contraseña desde Firestore
+// 1. Manejo de Inicio de Sesión o Auto-registro de Usuario
 formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const nombreIngresado = inputUsuario.value.trim();
     const passwordIngresada = inputPassword.value.trim();
 
+    if (!nombreIngresado || !passwordIngresada) return;
+
+    // Normalizar nombre de usuario para buscarlo como ID (minúsculas y sin espacios extra)
+    const userId = nombreIngresado.toLowerCase().replace(/\s+/g, '_');
+
     try {
-        // Consultar la contraseña actual en Firebase
-        const docSnap = await configRef.get();
-        let passwordReal = "1234"; // Contraseña por defecto si aún no se ha creado el documento
+        const userDocRef = usuariosRef.doc(userId);
+        const docSnap = await userDocRef.get();
 
-        if (docSnap.exists && docSnap.data().password) {
-            passwordReal = docSnap.data().password;
-        } else {
-            // Si no existe en la base de datos, la inicializamos con "1234"
-            await configRef.set({ password: "1234" }, { merge: true });
-        }
-
-        if (passwordIngresada !== passwordReal) {
-            alert("Contraseña incorrecta. Intenta nuevamente.");
-            inputPassword.value = '';
-            return;
-        }
-
-        // Si la contraseña es correcta, pedir nombre y rol si no están guardados
-        if (!usuarioActual || !rolActual) {
-            while (!usuarioActual || usuarioActual.trim() === '') {
-                usuarioActual = prompt('Ingresa tu nombre para continuar:');
+        if (docSnap.exists) {
+            // El usuario ya existe, verificar contraseña
+            const datosUsuario = docSnap.data();
+            if (datosUsuario.password !== passwordIngresada) {
+                alert("Contraseña incorrecta para este usuario.");
+                inputPassword.value = '';
+                return;
             }
-            usuarioActual = usuarioActual.trim();
-            
-            let eleccionRol = prompt('Selecciona tu rol:\n1. Operador\n2. Administrador', '1');
-            rolActual = (eleccionRol === '2') ? 'Administrador' : 'Operador';
+            usuarioActual = datosUsuario.nombre;
+            rolActual = datosUsuario.rol;
+        } else {
+            // El usuario no existe, crearlo automáticamente de forma amigable
+            if (confirm(`El usuario "${nombreIngresado}" no está registrado. ¿Deseas crearlo ahora?`)) {
+                let eleccionRol = prompt('Selecciona el rol para este nuevo usuario:\n1. Operador\n2. Administrador', '1');
+                let nuevoRol = (eleccionRol === '2') ? 'Administrador' : 'Operador';
 
-            localStorage.setItem('usuario_salidas', usuarioActual);
-            localStorage.setItem('rol_salidas', rolActual);
+                await userDocRef.set({
+                    nombre: nombreIngresado,
+                    password: passwordIngresada,
+                    rol: nuevoRol,
+                    creado: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                usuarioActual = nombreIngresado;
+                rolActual = nuevoRol;
+                alert(`¡Usuario "${usuarioActual}" creado exitosamente como ${rolActual}!`);
+            } else {
+                return;
+            }
         }
 
+        // Guardar en sesión local del navegador
+        localStorage.setItem('usuario_salidas', usuarioActual);
+        localStorage.setItem('rol_salidas', rolActual);
         sessionStorage.setItem('sesion_autorizada', 'true');
+
+        inputUsuario.value = '';
         inputPassword.value = '';
         mostrarAplicacion();
 
     } catch (error) {
-        console.error("Error al verificar la contraseña:", error);
+        console.error("Error al iniciar sesión:", error);
         alert("Ocurrió un error al conectar con el servidor.");
     }
 });
@@ -95,44 +110,32 @@ function mostrarAplicacion() {
     loginScreen.style.display = 'none';
     mainApp.style.display = 'block';
     userDisplay.textContent = `${usuarioActual} (${rolActual})`;
-
-    // Si es Administrador, agregamos el botón de cambiar contraseña en pantalla
-    adminControls.innerHTML = '';
-    if (rolActual === 'Administrador') {
-        const btnCambiarPass = document.createElement('button');
-        btnCambiarPass.textContent = '🔑 Cambiar Contraseña';
-        btnCambiarPass.style.cssText = 'background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;';
-        btnCambiarPass.onclick = cambiarContrasenaSistema;
-        adminControls.appendChild(btnCambiarPass);
-    }
 }
 
-// Función exclusiva para Administradores para cambiar la clave en Firestore
-window.cambiarContrasenaSistema = async function() {
-    if (rolActual !== 'Administrador') {
-        alert("No tienes permisos para realizar esta acción.");
-        return;
-    }
-
-    const nuevaPassword = prompt("Ingresa la nueva contraseña para el sistema:");
+// Botón para que cualquier usuario cambie su propia contraseña
+btnCambiarPass.addEventListener('click', async () => {
+    const nuevaPassword = prompt("Ingresa tu nueva contraseña personal:");
     if (!nuevaPassword || nuevaPassword.trim() === "") return;
 
-    if (confirm(`¿Estás seguro de cambiar la contraseña de acceso a: "${nuevaPassword.trim()}"?`)) {
+    const userId = usuarioActual.toLowerCase().replace(/\s+/g, '_');
+
+    if (confirm(`¿Estás seguro de actualizar tu contraseña, ${usuarioActual}?`)) {
         try {
-            await configRef.set({ password: nuevaPassword.trim() }, { merge: true });
-            alert("¡Contraseña actualizada con éxito! Ahora se requerirá esta nueva clave en todos los dispositivos.");
+            await usuariosRef.doc(userId).update({ password: nuevaPassword.trim() });
+            alert("¡Contraseña actualizada con éxito!");
         } catch (error) {
-            console.error("Error al actualizar la contraseña: ", error);
-            alert("No se pudo actualizar la contraseña en el servidor.");
+            console.error("Error al actualizar contraseña:", error);
+            alert("No se pudo actualizar la contraseña.");
         }
     }
-};
+});
 
 // Botón de cerrar sesión
 btnLogout.addEventListener('click', () => {
     sessionStorage.removeItem('sesion_autorizada');
     mainApp.style.display = 'none';
     loginScreen.style.display = 'block';
+    inputUsuario.value = '';
     inputPassword.value = '';
 });
 
