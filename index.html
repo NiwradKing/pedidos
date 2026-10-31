@@ -27,11 +27,14 @@
 
         <!-- CONTENIDO PRINCIPAL (Oculto hasta autenticarse) -->
         <div id="main-app" style="display: none;">
-            <!-- Tarjeta de Usuario Activo -->
-            <div id="user-info" class="card" style="margin-bottom: 15px; background: #f8fafc; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center;">
+            <!-- Tarjeta de Usuario Activo y Panel Admin -->
+            <div id="user-info" class="card" style="margin-bottom: 15px; background: #f8fafc; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <p style="margin: 0; font-size: 14px; color: #475569;">
                     Usuario: <strong id="user-display" style="color: #0f172a;"></strong>
                 </p>
+                <div id="admin-controls" style="display: flex; gap: 5px; align-items: center;">
+                    <!-- Botón de cambiar contraseña (se inyecta por JS si es Admin) -->
+                </div>
                 <button id="btn-logout" style="background: #64748b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Cerrar Sesión</button>
             </div>
 
