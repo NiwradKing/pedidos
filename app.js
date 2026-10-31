@@ -12,89 +12,93 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Referencia a la colección en la raíz
-const inventarioRef = db.collection('inventario');
+// Referencia a la colección 'salidas'
+const salidasRef = db.collection('salidas');
 
-const productoSelect = document.getElementById('producto-select');
+// Elementos DOM
 const formSalida = document.getElementById('form-salida');
-const listaInventario = document.getElementById('lista-inventario');
+const listaHistorial = document.getElementById('lista-historial');
+const userInfo = document.getElementById('user-info');
+const userDisplay = document.getElementById('user-display');
 
-// 1. Escuchar cambios en tiempo real (onSnapshot)
-inventarioRef.onSnapshot((snapshot) => {
-    // Limpiar desplegable y lista
-    productoSelect.innerHTML = '<option value="">Seleccione un producto...</option>';
-    listaInventario.innerHTML = '';
+// 1. Gestión del Nombre de Usuario (Inmutable tras el primer inicio)
+let usuarioActual = localStorage.getItem('usuario_salidas');
+
+if (!usuarioActual) {
+    while (!usuarioActual || usuarioActual.trim() === '') {
+        usuarioActual = prompt('Por favor, ingresa tu nombre de usuario para continuar (no se podrá cambiar):');
+    }
+    usuarioActual = usuarioActual.trim();
+    localStorage.setItem('usuario_salidas', usuarioActual);
+}
+
+// Mostrar el nombre guardado en la interfaz
+userDisplay.textContent = usuarioActual;
+userInfo.style.display = 'block';
+
+// 2. Registrar nueva salida
+formSalida.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const producto = document.getElementById('producto-nombre').value.trim();
+    const cantidad = parseInt(document.getElementById('cantidad-salida').value, 10);
+
+    if (!producto || cantidad <= 0) return;
+
+    try {
+        await salidasRef.add({
+            producto: producto,
+            cantidad: cantidad,
+            usuario: usuarioActual,
+            fecha: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        formSalida.reset();
+        document.getElementById('cantidad-salida').value = "1";
+    } catch (error) {
+        console.error("Error al registrar la salida: ", error);
+        alert("Ocurrió un error al guardar el registro.");
+    }
+});
+
+// 3. Escuchar e imprimir Historial en Tiempo Real (Ordenado de más reciente a antiguo)
+salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
+    listaHistorial.innerHTML = '';
 
     if (snapshot.empty) {
-        listaInventario.innerHTML = '<li style="text-align:center; color:#64748b;">No hay productos registrados en la base de datos.</li>';
+        listaHistorial.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No hay registros de salidas aún.</li>';
         return;
     }
 
     snapshot.forEach((doc) => {
         const item = doc.data();
-        const id = doc.id;
+        
+        // Formatear Fecha y Hora
+        let fechaFormateada = 'Procesando...';
+        if (item.fecha) {
+            const dateObj = item.fecha.toDate();
+            fechaFormateada = dateObj.toLocaleString('es-CO', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
 
-        // Llenar el selector para registrar salida
-        const option = document.createElement('option');
-        option.value = id;
-        option.textContent = `${item.nombre} (Stock: ${item.stock})`;
-        productoSelect.appendChild(option);
-
-        // Llenar la lista visible abajo
         const li = document.createElement('li');
         li.className = 'item-row';
         li.innerHTML = `
             <div>
-                <span class="item-name">${item.nombre}</span>
-                <br><small style="color:#64748b;">${item.categoria || 'Sin categoría'}</small>
+                <span class="item-name">${item.producto}</span>
+                <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong></small>
+                <br><small style="color:#94a3b8;">${fechaFormateada}</small>
             </div>
-            <span class="stock-badge">${item.stock} unidades</span>
+            <span class="stock-badge">-${item.cantidad} u.</span>
         `;
-        listaInventario.appendChild(li);
+        listaHistorial.appendChild(li);
     });
 }, (error) => {
-    console.error("Error conectando con Firestore: ", error);
-});
-
-// 2. Descontar stock al enviar el formulario
-formSalida.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const productoId = productoSelect.value;
-    const cantidadRetirar = parseInt(document.getElementById('cantidad-salida').value, 10);
-
-    if (!productoId) {
-        alert("Selecciona un producto válido.");
-        return;
-    }
-
-    try {
-        const docRef = inventarioRef.doc(productoId);
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            const data = doc.data();
-            const stockActual = Number(data.stock) || 0;
-
-            // Validar existencia de stock suficiente
-            if (stockActual < cantidadRetirar) {
-                alert(`No hay suficiente inventario. Disponible: ${stockActual}`);
-                return;
-            }
-
-            // Restar la cantidad seleccionada
-            const nuevoStock = stockActual - cantidadRetirar;
-
-            // Actualizar en Firestore
-            await docRef.update({
-                stock: nuevoStock
-            });
-
-            alert(`Salida exitosa: Se retiraron ${cantidadRetirar} unidad(es) de ${data.nombre}.`);
-            formSalida.reset();
-        }
-    } catch (error) {
-        console.error("Error al descontar del stock: ", error);
-        alert("Ocurrió un error al procesar la salida.");
-    }
+    console.error("Error al obtener historial: ", error);
 });
