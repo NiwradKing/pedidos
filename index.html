@@ -12,17 +12,17 @@
 <body>
     <div class="container">
         
-        <!-- PANTALLA DE ACCESO / LOGIN INDIVIDUAL -->
+        <!-- PANTALLA DE ACCESO / LOGIN -->
         <div id="login-screen" class="card">
             <h2>🔐 Iniciar Sesión</h2>
-            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Ingresa tu usuario y contraseña personal.</p>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Ingresa tus credenciales para acceder.</p>
             <form id="form-login">
                 <div class="form-group">
                     <label for="input-usuario">Nombre de Usuario</label>
-                    <input type="text" id="input-usuario" placeholder="Ej: Darwin, Juan..." required>
+                    <input type="text" id="input-usuario" placeholder="Ej: admin, juan..." required>
                 </div>
                 <div class="form-group">
-                    <label for="input-password">Contraseña Personal</label>
+                    <label for="input-password">Contraseña</label>
                     <input type="password" id="input-password" placeholder="Tu contraseña..." required>
                 </div>
                 <button type="submit" class="btn-submit" style="background: #0f172a;">Ingresar al Sistema</button>
@@ -31,18 +31,40 @@
 
         <!-- CONTENIDO PRINCIPAL (Oculto hasta autenticarse) -->
         <div id="main-app" style="display: none;">
-            <!-- Tarjeta de Usuario Activo y Opciones de Cuenta -->
+            
+            <!-- Barra Superior de Usuario -->
             <div id="user-info" class="card" style="margin-bottom: 15px; background: #f8fafc; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <p style="margin: 0; font-size: 14px; color: #475569;">
                     Usuario: <strong id="user-display" style="color: #0f172a;"></strong>
                 </p>
-                <div id="user-controls" style="display: flex; gap: 5px; align-items: center;">
-                    <button id="btn-cambiar-pass" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">🔑 Cambiar Mi Contraseña</button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="btn-cambiar-pass" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px;">🔑 Cambiar Mi Clave</button>
+                    <button id="btn-logout" style="background: #64748b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Cerrar Sesión</button>
                 </div>
-                <button id="btn-logout" style="background: #64748b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Cerrar Sesión</button>
             </div>
 
-            <!-- Formulario de Registro -->
+            <!-- PANEL EXCLUSIVO DE ADMINISTRADOR (Creación de Usuarios) -->
+            <div id="admin-panel" class="card" style="display: none; border-top: 4px solid #3b82f6; margin-bottom: 20px;">
+                <h2>👥 Gestión de Usuarios (Exclusivo Administrador)</h2>
+                <p style="color: #64748b; font-size: 13px;">Registra las cuentas de los empleados para permitirles el acceso al sistema.</p>
+                <form id="form-crear-usuario" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 15px;">
+                    <div class="form-group" style="margin: 0;">
+                        <input type="text" id="nuevo-user-nombre" placeholder="Nombre completo / Usuario" required>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <input type="password" id="nuevo-user-pass" placeholder="Contraseña inicial" required>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <select id="nuevo-user-rol" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            <option value="Operador">Operador</option>
+                            <option value="Administrador">Administrador</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-submit" style="background: #16a34a; margin: 0;">+ Crear Usuario</button>
+                </form>
+            </div>
+
+            <!-- Formulario de Registro de Salida -->
             <div class="card">
                 <h2>Registrar Salida de Producto</h2>
                 <form id="form-salida">
@@ -54,45 +76,3 @@
                         <label for="cantidad-salida">Cantidad a retirar</label>
                         <input type="number" id="cantidad-salida" value="1" min="1" required>
                     </div>
-                    <div class="form-group">
-                        <label for="precio-salida">Precio Unitario ($ COP)</label>
-                        <input type="number" id="precio-salida" placeholder="Ej: 3500" min="0" step="50" required>
-                    </div>
-                    <button type="submit" class="btn-submit">Registrar Salida</button>
-                </form>
-            </div>
-
-            <!-- Resumen Diario (Sumatoria del Día) -->
-            <div class="card" style="margin-top: 20px;">
-                <h2>Totales Retirados Hoy</h2>
-                <table id="tabla-totales-dia" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
-                            <th style="padding: 8px;">Producto</th>
-                            <th style="padding: 8px; text-align: center;">Cantidad</th>
-                            <th style="padding: 8px; text-align: right;">Total ($)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="body-totales">
-                        <tr>
-                            <td colspan="3" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Historial en Tiempo Real -->
-            <div class="card" style="margin-top: 20px;">
-                <h2>Historial de Salidas en Tiempo Real</h2>
-                <ul id="lista-historial" class="history-list">
-                    <li style="text-align: center; color: #64748b; padding: 10px;">Cargando registros...</li>
-                </ul>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Archivo principal de JavaScript -->
-    <script src="app.js"></script>
-</body>
-</html>
