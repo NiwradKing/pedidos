@@ -56,7 +56,8 @@ formLogin.addEventListener('submit', async (e) => {
 
     if (!nombreIngresado || !passwordIngresada) return;
 
-    const userId = nombreIngresado.toLowerCase().replace(/\s+/g, '_');
+    // Usamos directamente lo que escribas o el formato en minúsculas sin modificar guiones bajos si escribes tal cual el ID
+    const userId = nombreIngresado.toLowerCase();
 
     try {
         const userDocRef = usuariosRef.doc(userId);
