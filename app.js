@@ -9,10 +9,11 @@ const firebaseConfig = {
     measurementId: "G-Y5HZCX7FRT"
 };
 
-// Inicializar Firebase y Firestore
+// Inicialización de Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
+
 const db = firebase.firestore();
 const salidasRef = db.collection('salidas');
 const usuariosRef = db.collection('usuarios');
@@ -56,7 +57,7 @@ formLogin.addEventListener('submit', async (e) => {
 
     if (!nombreIngresado || !passwordIngresada) return;
 
-    // Usamos directamente lo que escribas o el formato en minúsculas sin modificar guiones bajos si escribes tal cual el ID
+    // Buscar coincidencia exacta por ID en minúsculas
     const userId = nombreIngresado.toLowerCase();
 
     try {
@@ -64,7 +65,6 @@ formLogin.addEventListener('submit', async (e) => {
         const docSnap = await userDocRef.get();
 
         if (docSnap.exists) {
-            // El usuario existe en Firestore, validar clave
             const datosUsuario = docSnap.data();
             if (datosUsuario.password !== passwordIngresada) {
                 alert("Contraseña incorrecta.");
@@ -74,7 +74,7 @@ formLogin.addEventListener('submit', async (e) => {
             usuarioActual = datosUsuario.nombre;
             rolActual = datosUsuario.rol;
         } else {
-            // Si la base de datos de usuarios está totalmente vacía, creamos el Admin inicial
+            // Creación de Administrador inicial si la colección no tiene usuarios
             const snapshotUsuarios = await usuariosRef.get();
             if (snapshotUsuarios.empty && userId === 'admin' && passwordIngresada === 'admin123') {
                 await userDocRef.set({
@@ -92,7 +92,7 @@ formLogin.addEventListener('submit', async (e) => {
             }
         }
 
-        // Guardar sesión en navegador
+        // Guardar estado de sesión
         localStorage.setItem('usuario_salidas', usuarioActual);
         localStorage.setItem('rol_salidas', rolActual);
         sessionStorage.setItem('sesion_autorizada', 'true');
@@ -103,7 +103,7 @@ formLogin.addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error("Error al iniciar sesión:", error);
-        alert("Error al conectar con la base de datos.");
+        alert("Error al conectar con la base de datos: " + error.message);
     }
 });
 
@@ -112,7 +112,6 @@ function mostrarAplicacion() {
     mainApp.style.display = 'block';
     userDisplay.textContent = `${usuarioActual} (${rolActual})`;
 
-    // Solo mostrar el panel de creación de usuarios si el rol es Administrador
     if (rolActual === 'Administrador') {
         adminPanel.style.display = 'block';
     } else {
@@ -120,7 +119,7 @@ function mostrarAplicacion() {
     }
 }
 
-// 2. Crear nuevos usuarios desde el Panel de Administrador
+// 2. Creación de nuevos usuarios desde el Panel de Administrador
 if (formCrearUsuario) {
     formCrearUsuario.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -142,7 +141,6 @@ if (formCrearUsuario) {
         try {
             const docSnap = await userDocRef.get();
 
-            // Regla: Si se intenta crear un Administrador pero ya existe uno, lo bloqueamos
             if (rolNuevo === 'Administrador') {
                 const adminCheck = await usuariosRef.where('rol', '==', 'Administrador').get();
                 if (!adminCheck.empty && !docSnap.exists) {
@@ -338,22 +336,3 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
             tr.style.borderBottom = '1px solid #f1f5f9';
             tr.innerHTML = `
                 <td style="padding: 8px; font-weight: 600;">${prod}</td>
-                <td style="padding: 8px; text-align: center; color: #ef4444; font-weight: bold;">-${datos.cantidad} u.</td>
-                <td style="padding: 8px; text-align: right; font-weight: bold; color: #0f172a;">${formatoMoneda(datos.dinero)}</td>
-            `;
-            bodyTotales.appendChild(tr);
-        });
-
-        const trTotal = document.createElement('tr');
-        trTotal.style.background = '#f8fafc';
-        trTotal.style.fontWeight = 'bold';
-        trTotal.innerHTML = `
-            <td colspan="2" style="padding: 10px; text-align: right; color: #334155;">TOTAL DEL DÍA:</td>
-            <td style="padding: 10px; text-align: right; color: #16a34a; font-size: 15px;">${formatoMoneda(granTotalDinero)}</td>
-        `;
-        bodyTotales.appendChild(trTotal);
-    }
-
-}, (error) => {
-    console.error("Error al obtener historial: ", error);
-    listaHistorial.innerHTML = `<li style="color:red; text-align:center; padding: 10px;">Error al cargar
