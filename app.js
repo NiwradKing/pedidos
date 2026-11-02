@@ -52,17 +52,12 @@ if (sesionActiva === 'true' && usuarioActual && rolActual) {
 // 1. Manejo de Inicio de Sesión
 formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
-    console.log("¡Se hizo clic en ingresar!"); // <-- Añade esto
-
     const nombreIngresado = inputUsuario.value.trim();
     const passwordIngresada = inputPassword.value.trim();
-
-    console.log("Intentando iniciar sesión con:", nombreIngresado); // <-- Añade esto
 
     if (!nombreIngresado || !passwordIngresada) return;
 
     const userId = nombreIngresado.toLowerCase();
-    // ... el resto de tu código ...
 
     try {
         const userDocRef = usuariosRef.doc(userId);
@@ -78,7 +73,6 @@ formLogin.addEventListener('submit', async (e) => {
             usuarioActual = datosUsuario.nombre;
             rolActual = datosUsuario.rol;
         } else {
-            // Creación de Administrador inicial si la colección no tiene usuarios
             const snapshotUsuarios = await usuariosRef.get();
             if (snapshotUsuarios.empty && userId === 'admin' && passwordIngresada === 'admin123') {
                 await userDocRef.set({
@@ -314,14 +308,15 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
                 <span class="item-name">${item.producto}</span>
                 <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong> (${item.rol || 'Operador'})</small>
                 <br><small style="color:#64748b;">Precio c/u: ${formatoMoneda(precioUnitario)}</small>
-                <br><small style="color:#94a3b8;">${fechaFormateada}</small>${botonEliminar ? '<br>' + botonEliminar : ''}
+                <br><small style="color:#94a3b8;">${fechaFormateada}</small>
+                ${botonEliminar ? '<br>' + botonEliminar : ''}
             </div>
             <div style="text-align: right;">
                 <span class="stock-badge">-${item.cantidad} u.</span>
                 <br><strong style="color: #0f172a; font-size: 13px;">${formatoMoneda(totalFila)}</strong>
             </div>
         `;
-        listaHistorial.appendChild(li);%
+        listaHistorial.appendChild(li);
     });
 
     bodyTotales.innerHTML = '';
@@ -340,3 +335,23 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
             tr.style.borderBottom = '1px solid #f1f5f9';
             tr.innerHTML = `
                 <td style="padding: 8px; font-weight: 600;">${prod}</td>
+                <td style="padding: 8px; text-align: center; color: #ef4444; font-weight: bold;">-${datos.cantidad} u.</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #0f172a;">${formatoMoneda(datos.dinero)}</td>
+            `;
+            bodyTotales.appendChild(tr);
+        });
+
+        const trTotal = document.createElement('tr');
+        trTotal.style.background = '#f8fafc';
+        trTotal.style.fontWeight = 'bold';
+        trTotal.innerHTML = `
+            <td colspan="2" style="padding: 10px; text-align: right; color: #334155;">TOTAL DEL DÍA:</td>
+            <td style="padding: 10px; text-align: right; color: #16a34a; font-size: 15px;">${formatoMoneda(granTotalDinero)}</td>
+        `;
+        bodyTotales.appendChild(trTotal);
+    }
+
+}, (error) => {
+    console.error("Error al obtener historial: ", error);
+    listaHistorial.innerHTML = `<li style="color:red; text-align:center; padding: 10px;">Error al cargar historial: ${error.message}</li>`;
+});
