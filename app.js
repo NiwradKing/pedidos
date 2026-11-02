@@ -34,9 +34,8 @@ const bodyTotales = document.getElementById('body-totales');
 const bodyUsuariosLista = document.getElementById('body-usuarios-lista');
 const userDisplay = document.getElementById('user-display');
 
-let cacheSalidas = []; // Guardar datos para el buscador
+let cacheSalidas = [];
 
-// Control de Secciones (Menú lateral)
 window.cambiarSeccion = function(seccion) {
     const secSalidas = document.getElementById('seccion-salidas');
     const secHistorial = document.getElementById('seccion-historial');
@@ -77,11 +76,9 @@ formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nombreIngresado = inputUsuario.value.trim();
     const passwordIngresada = inputPassword.value.trim();
-
     if (!nombreIngresado || !passwordIngresada) return;
 
     const userId = nombreIngresado.toLowerCase();
-
     try {
         const userDocRef = usuariosRef.doc(userId);
         const docSnap = await userDocRef.get();
@@ -116,14 +113,11 @@ formLogin.addEventListener('submit', async (e) => {
         localStorage.setItem('usuario_salidas', usuarioActual);
         localStorage.setItem('rol_salidas', rolActual);
         sessionStorage.setItem('sesion_autorizada', 'true');
-
         inputUsuario.value = '';
         inputPassword.value = '';
         mostrarAplicacion();
-
     } catch (error) {
         console.error("Error al iniciar sesión:", error);
-        alert("Error al conectar con la base de datos: " + error.message);
     }
 });
 
@@ -131,7 +125,6 @@ function mostrarAplicacion() {
     loginScreen.style.display = 'none';
     mainApp.style.display = 'flex';
     userDisplay.textContent = `${usuarioActual} (${rolActual})`;
-
     if (rolActual === 'Administrador') {
         menuAdminUsuarios.style.display = 'block';
     } else {
@@ -139,38 +132,32 @@ function mostrarAplicacion() {
     }
 }
 
-// Crear Operador
 if (formCrearUsuario) {
     formCrearUsuario.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (rolActual !== 'Administrador') return;
-
         const nombreNuevo = document.getElementById('nuevo-user-nombre').value.trim();
         const passNueva = document.getElementById('nuevo-user-pass').value.trim();
         if (!nombreNuevo || !passNueva) return;
 
         const nuevoUserId = nombreNuevo.toLowerCase().replace(/\s+/g, '_');
-        const userDocRef = usuariosRef.doc(nuevoUserId);
-
         try {
+            const userDocRef = usuariosRef.doc(nuevoUserId);
             const docSnap = await userDocRef.get();
             if (docSnap.exists) {
                 alert(`El usuario "${nombreNuevo}" ya existe.`);
                 return;
             }
-
             await userDocRef.set({
                 nombre: nombreNuevo,
                 password: passNueva,
                 rol: 'Operador',
                 creado: firebase.firestore.FieldValue.serverTimestamp()
             });
-
             alert(`¡Operador "${nombreNuevo}" creado con éxito!`);
             formCrearUsuario.reset();
             cargarListaUsuarios();
         } catch (error) {
-            console.error("Error al crear operador:", error);
             alert("No se pudo registrar el usuario.");
         }
     });
@@ -202,7 +189,7 @@ async function cargarListaUsuarios() {
             bodyUsuariosLista.appendChild(tr);
         });
     } catch (error) {
-        console.error("Error al cargar usuarios:", error);
+        console.error(error);
     }
 }
 
@@ -226,7 +213,7 @@ btnCambiarPass.addEventListener('click', async () => {
             await usuariosRef.doc(userId).update({ password: nuevaPassword.trim() });
             alert("¡Contraseña actualizada con éxito!");
         } catch (error) {
-            alert("No se pudo actualizar la clave.");
+            alert("No se pudo actualizar.");
         }
     }
 });
@@ -267,13 +254,13 @@ formSalida.addEventListener('submit', async (e) => {
         formSalida.reset();
         cantidadInput.value = "1";
     } catch (error) {
-        alert("Ocurrió un error al guardar el registro.");
+        alert("Ocurrió un error al guardar.");
     }
 });
 
 window.eliminarRegistro = async function(id) {
     if (rolActual !== 'Administrador') {
-        alert("No tienes permisos de Administrador.");
+        alert("No tienes permisos.");
         return;
     }
     if (confirm("¿Estás seguro de eliminar este registro?")) {
@@ -285,7 +272,6 @@ window.eliminarRegistro = async function(id) {
     }
 };
 
-// Escuchar Historial en tiempo real y separar el de Hoy
 salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     listaHistorialHoy.innerHTML = '';
     cacheSalidas = [];
@@ -307,15 +293,12 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
         
         let fechaFormateada = 'Procesando...';
         let esDeHoy = false;
-        let fechaIsoStr = '';
 
         if (item.fecha) {
             const dateObj = item.fecha.toDate();
             fechaFormateada = dateObj.toLocaleString('es-CO', {
                 day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
-            fechaIsoStr = dateObj.toISOString().split('T')[0]; // Formato YYYY-MM-DD para buscador
-
             if (dateObj.toDateString() === hoyStr) {
                 esDeHoy = true;
             }
@@ -324,7 +307,6 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
         const precioUnitario = item.precioUnitario || 0;
         const totalFila = item.totalPrecio || (item.cantidad * precioUnitario);
 
-        // Si es de hoy, calcular totales y agregarlo a la lista de hoy
         if (esDeHoy) {
             hayMovimientosHoy = true;
             const claveProd = item.producto.trim();
@@ -359,7 +341,6 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
         listaHistorialHoy.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No hay registros de salidas en el día de hoy.</li>';
     }
 
-    // Renderizar Totales del Día
     bodyTotales.innerHTML = '';
     const productosHoy = Object.keys(totalesHoy);
     if (productosHoy.length === 0) {
@@ -389,26 +370,33 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
         bodyTotales.appendChild(trTotal);
     }
 
-    // Actualizar historial general si está abierto
     renderizarHistorialGeneral(cacheSalidas);
 });
 
-// Función para renderizar el historial general y aplicar buscador por fecha
+// Buscador general por Nombre y Fecha simultáneos
 window.renderizarHistorialGeneral = function(lista) {
+    const textoBusqueda = document.getElementById('buscar-nombre').value.toLowerCase().trim();
     const fechaFiltro = document.getElementById('filtro-fecha').value;
     listaHistorialGeneral.innerHTML = '';
 
-    let filtrados = lista;
-    if (fechaFiltro) {
-        filtrados = lista.filter(item => {
-            if (!item.fecha) return false;
+    let filtrados = lista.filter(item => {
+        if (!item.producto) return false;
+        
+        // Coincidencia por nombre (contenga lo que el usuario escribe)
+        const coincideNombre = item.producto.toLowerCase().includes(textoBusqueda);
+        
+        // Coincidencia por fecha (si se seleccionó una)
+        let coincideFecha = true;
+        if (fechaFiltro && item.fecha) {
             const itemDateStr = item.fecha.toDate().toISOString().split('T')[0];
-            return itemDateStr === fechaFiltro;
-        });
-    }
+            coincideFecha = (itemDateStr === fechaFiltro);
+        }
+
+        return coincideNombre && coincideFecha;
+    });
 
     if (filtrados.length === 0) {
-        listaHistorialGeneral.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No se encontraron registros para esta fecha.</li>';
+        listaHistorialGeneral.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No se encontraron registros con esos criterios.</li>';
         return;
     }
 
@@ -442,6 +430,6 @@ window.renderizarHistorialGeneral = function(lista) {
     });
 };
 
-window.filtrarHistorialPorFecha = function() {
+window.filtrarHistorialGeneral = function() {
     renderizarHistorialGeneral(cacheSalidas);
 };

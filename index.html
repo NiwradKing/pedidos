@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Salidas e Inventario</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
     <!-- Firebase SDK v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -52,52 +52,50 @@
         <!-- CONTENIDO PRINCIPAL -->
         <main class="main-content">
             
-            <!-- SECCIÓN 1: SALIDAS Y RESUMEN DEL DÍA -->
+            <!-- SECCIÓN 1: SALIDAS Y RESUMEN (Uno debajo del otro) -->
             <section id="seccion-salidas" class="content-section">
                 <header class="content-header">
                     <h2>Registro de Salidas (Hoy)</h2>
                 </header>
 
-                <div class="dashboard-grid">
-                    <!-- Formulario de Salida -->
-                    <div class="card">
-                        <h3>Nueva Salida</h3>
-                        <form id="form-salida">
-                            <div class="form-group">
-                                <label for="producto-nombre">Producto</label>
-                                <input type="text" id="producto-nombre" placeholder="Nombre del producto" required>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="cantidad-salida">Cantidad</label>
-                                    <input type="number" id="cantidad-salida" value="1" min="1" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="precio-salida">Precio Unitario (COP)</label>
-                                    <input type="number" id="precio-salida" placeholder="0" min="0" step="any" required>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn-primary">Registrar Salida</button>
-                        </form>
-                    </div>
-
-                    <!-- Totales del Día -->
-                    <div class="card">
-                        <h3>Resumen del Día</h3>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Producto</th>
-                                        <th style="text-align: center;">Cant.</th>
-                                        <th style="text-align: right;">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="body-totales">
-                                    <tr><td colspan="3" style="text-align: center; color: #64748b;">Cargando resumen...</td></tr>
-                                </tbody>
-                            </table>
+                <!-- Formulario de Salida (Arriba) -->
+                <div class="card full-width" style="margin-bottom: 20px;">
+                    <h3>Nueva Salida</h3>
+                    <form id="form-salida">
+                        <div class="form-group">
+                            <label for="producto-nombre">Producto</label>
+                            <input type="text" id="producto-nombre" placeholder="Nombre del producto" required>
                         </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cantidad-salida">Cantidad</label>
+                                <input type="number" id="cantidad-salida" value="1" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="precio-salida">Precio Unitario (COP)</label>
+                                <input type="number" id="precio-salida" placeholder="0" min="0" step="any" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">Registrar Salida</button>
+                    </form>
+                </div>
+
+                <!-- Totales del Día (Abajo) -->
+                <div class="card full-width" style="margin-bottom: 20px;">
+                    <h3>Resumen del Día</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th style="text-align: center;">Cant.</th>
+                                    <th style="text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-totales">
+                                <tr><td colspan="3" style="text-align: center; color: #64748b;">Cargando resumen...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -110,24 +108,30 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN 2: HISTORIAL GENERAL CON BUSCADOR POR FECHA -->
+            <!-- SECCIÓN 2: HISTORIAL GENERAL CON BUSCADOR (Por Fecha y Nombre) -->
             <section id="seccion-historial" class="content-section" style="display: none;">
                 <header class="content-header">
-                    <h2>Historial y Buscador por Fecha</h2>
-                    <p style="color: #64748b; font-size: 14px;">Consulta todos los registros pasados filtrando por fecha específica.</p>
+                    <h2>Historial y Buscador General</h2>
+                    <p style="color: #64748b; font-size: 14px;">Busca registros pasados filtrando por nombre de producto o por fecha.</p>
                 </header>
 
                 <div class="card full-width" style="margin-bottom: 20px;">
-                    <div class="form-group" style="max-width: 300px; margin-bottom: 0;">
-                        <label for="filtro-fecha">Filtrar por fecha:</label>
-                        <input type="date" id="filtro-fecha" onchange="filtrarHistorialPorFecha()">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="buscar-nombre">Buscar por Nombre de Producto:</label>
+                            <input type="text" id="buscar-nombre" placeholder="Ej. Cerveza Poker" oninput="filtrarHistorialGeneral()">
+                        </div>
+                        <div class="form-group">
+                            <label for="filtro-fecha">Filtrar por Fecha:</label>
+                            <input type="date" id="filtro-fecha" onchange="filtrarHistorialGeneral()">
+                        </div>
                     </div>
                 </div>
 
                 <div class="card full-width">
                     <h3>Resultados del Historial</h3>
                     <ul id="lista-historial-general" class="history-list">
-                        <li style="text-align:center; color:#64748b;">Selecciona una fecha o visualiza el archivo completo.</li>
+                        <li style="text-align:center; color:#64748b;">Cargando historial...</li>
                     </ul>
                 </div>
             </section>
