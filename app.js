@@ -355,3 +355,4 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     console.error("Error al obtener historial: ", error);
     listaHistorial.innerHTML = `<li style="color:red; text-align:center; padding: 10px;">Error al cargar historial: ${error.message}</li>`;
 });
+
