@@ -60,10 +60,6 @@ window.cambiarSeccion = function(seccion) {
     }
 };
 
-const formatoMoneda = (valor) => {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
-};
-
 let sesionActiva = sessionStorage.getItem('sesion_autorizada');
 let usuarioActual = localStorage.getItem('usuario_salidas');
 let rolActual = localStorage.getItem('rol_salidas');
@@ -230,13 +226,11 @@ formSalida.addEventListener('submit', async (e) => {
     e.preventDefault();
     const productoInput = document.getElementById('producto-nombre');
     const cantidadInput = document.getElementById('cantidad-salida');
-    const precioInput = document.getElementById('precio-salida');
 
     const producto = productoInput.value.trim();
     const cantidad = parseInt(cantidadInput.value, 10);
-    const precio = parseFloat(precioInput.value);
 
-    if (!producto || isNaN(cantidad) || cantidad <= 0 || isNaN(precio) || precio < 0) {
+    if (!producto || isNaN(cantidad) || cantidad <= 0) {
         alert("Por favor completa los campos correctamente.");
         return;
     }
@@ -245,8 +239,6 @@ formSalida.addEventListener('submit', async (e) => {
         await salidasRef.add({
             producto: producto,
             cantidad: cantidad,
-            precioUnitario: precio,
-            totalPrecio: cantidad * precio,
             usuario: usuarioActual,
             rol: rolActual,
             fecha: firebase.firestore.FieldValue.serverTimestamp()
@@ -278,7 +270,7 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     
     if (snapshot.empty) {
         listaHistorialHoy.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No hay registros hoy.</li>';
-        bodyTotales.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No hay salidas hoy.</td></tr>';
+        bodyTotales.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #64748b;">No hay salidas hoy.</td></tr>';
         return;
     }
 
@@ -304,17 +296,13 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
             }
         }
 
-        const precioUnitario = item.precioUnitario || 0;
-        const totalFila = item.totalPrecio || (item.cantidad * precioUnitario);
-
         if (esDeHoy) {
             hayMovimientosHoy = true;
             const claveProd = item.producto.trim();
             if (!totalesHoy[claveProd]) {
-                totalesHoy[claveProd] = { cantidad: 0, dinero: 0 };
+                totalesHoy[claveProd] = 0;
             }
-            totalesHoy[claveProd].cantidad += (item.cantidad || 0);
-            totalesHoy[claveProd].dinero += totalFila;
+            totalesHoy[claveProd] += (item.cantidad || 0);
 
             let botonEliminar = rolActual === 'Administrador' ? `<button onclick="eliminarRegistro('${docId}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-top:5px;">🗑️ Eliminar</button>` : '';
 
@@ -324,13 +312,11 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
                 <div>
                     <span class="item-name">${item.producto}</span>
                     <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong> (${item.rol || 'Operador'})</small>
-                    <br><small style="color:#64748b;">Precio c/u: ${formatoMoneda(precioUnitario)}</small>
                     <br><small style="color:#94a3b8;">${fechaFormateada}</small>
                     ${botonEliminar ? '<br>' + botonEliminar : ''}
                 </div>
                 <div style="text-align: right;">
                     <span class="stock-badge">-${item.cantidad} u.</span>
-                    <br><strong style="color: #0f172a; font-size: 13px;">${formatoMoneda(totalFila)}</strong>
                 </div>
             `;
             listaHistorialHoy.appendChild(li);
@@ -344,36 +330,23 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     bodyTotales.innerHTML = '';
     const productosHoy = Object.keys(totalesHoy);
     if (productosHoy.length === 0) {
-        bodyTotales.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td></tr>';
+        bodyTotales.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td></tr>';
     } else {
-        let granTotalDinero = 0;
         productosHoy.forEach((prod) => {
-            const datos = totalesHoy[prod];
-            granTotalDinero += datos.dinero;
+            const totalCant = totalesHoy[prod];
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #f1f5f9';
             tr.innerHTML = `
-                <td style="padding: 8px; font-weight: 600;">${prod}</td>
-                <td style="padding: 8px; text-align: center; color: #ef4444; font-weight: bold;">-${datos.cantidad} u.</td>
-                <td style="padding: 8px; text-align: right; font-weight: bold; color: #0f172a;">${formatoMoneda(datos.dinero)}</td>
+                <td style="padding: 10px; font-weight: 600;">${prod}</td>
+                <td style="padding: 10px; text-align: right; color: #ef4444; font-weight: bold;">-${totalCant} u.</td>
             `;
             bodyTotales.appendChild(tr);
         });
-
-        const trTotal = document.createElement('tr');
-        trTotal.style.background = '#f8fafc';
-        trTotal.style.fontWeight = 'bold';
-        trTotal.innerHTML = `
-            <td colspan="2" style="padding: 10px; text-align: right; color: #334155;">TOTAL DEL DÍA:</td>
-            <td style="padding: 10px; text-align: right; color: #16a34a; font-size: 15px;">${formatoMoneda(granTotalDinero)}</td>
-        `;
-        bodyTotales.appendChild(trTotal);
     }
 
     renderizarHistorialGeneral(cacheSalidas);
 });
 
-// Buscador general por Nombre y Fecha simultáneos
 window.renderizarHistorialGeneral = function(lista) {
     const textoBusqueda = document.getElementById('buscar-nombre').value.toLowerCase().trim();
     const fechaFiltro = document.getElementById('filtro-fecha').value;
@@ -381,17 +354,12 @@ window.renderizarHistorialGeneral = function(lista) {
 
     let filtrados = lista.filter(item => {
         if (!item.producto) return false;
-        
-        // Coincidencia por nombre (contenga lo que el usuario escribe)
         const coincideNombre = item.producto.toLowerCase().includes(textoBusqueda);
-        
-        // Coincidencia por fecha (si se seleccionó una)
         let coincideFecha = true;
         if (fechaFiltro && item.fecha) {
             const itemDateStr = item.fecha.toDate().toISOString().split('T')[0];
             coincideFecha = (itemDateStr === fechaFiltro);
         }
-
         return coincideNombre && coincideFecha;
     });
 
@@ -407,8 +375,6 @@ window.renderizarHistorialGeneral = function(lista) {
                 day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
         }
-        const precioUnitario = item.precioUnitario || 0;
-        const totalFila = item.totalPrecio || (item.cantidad * precioUnitario);
         let botonEliminar = rolActual === 'Administrador' ? `<button onclick="eliminarRegistro('${item.id}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-top:5px;">🗑️ Eliminar</button>` : '';
 
         const li = document.createElement('li');
@@ -417,13 +383,11 @@ window.renderizarHistorialGeneral = function(lista) {
             <div>
                 <span class="item-name">${item.producto}</span>
                 <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong> (${item.rol || 'Operador'})</small>
-                <br><small style="color:#64748b;">Precio c/u: ${formatoMoneda(precioUnitario)}</small>
                 <br><small style="color:#94a3b8;">${fechaFormateada}</small>
                 ${botonEliminar ? '<br>' + botonEliminar : ''}
             </div>
             <div style="text-align: right;">
                 <span class="stock-badge">-${item.cantidad} u.</span>
-                <br><strong style="color: #0f172a; font-size: 13px;">${formatoMoneda(totalFila)}</strong>
             </div>
         `;
         listaHistorialGeneral.appendChild(li);

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Salidas e Inventario</title>
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=5">
     <!-- Firebase SDK v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -52,7 +52,7 @@
         <!-- CONTENIDO PRINCIPAL -->
         <main class="main-content">
             
-            <!-- SECCIÓN 1: SALIDAS Y RESUMEN (Uno debajo del otro) -->
+            <!-- SECCIÓN 1: SALIDAS Y RESUMEN (Uno debajo del otro, sin precios) -->
             <section id="seccion-salidas" class="content-section">
                 <header class="content-header">
                     <h2>Registro de Salidas (Hoy)</h2>
@@ -66,15 +66,9 @@
                             <label for="producto-nombre">Producto</label>
                             <input type="text" id="producto-nombre" placeholder="Nombre del producto" required>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cantidad-salida">Cantidad</label>
-                                <input type="number" id="cantidad-salida" value="1" min="1" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="precio-salida">Precio Unitario (COP)</label>
-                                <input type="number" id="precio-salida" placeholder="0" min="0" step="any" required>
-                            </div>
+                        <div class="form-group">
+                            <label for="cantidad-salida">Cantidad</label>
+                            <input type="number" id="cantidad-salida" value="1" min="1" required>
                         </div>
                         <button type="submit" class="btn-primary">Registrar Salida</button>
                     </form>
@@ -88,12 +82,11 @@
                             <thead>
                                 <tr>
                                     <th>Producto</th>
-                                    <th style="text-align: center;">Cant.</th>
-                                    <th style="text-align: right;">Total</th>
+                                    <th style="text-align: right;">Cantidad Total</th>
                                 </tr>
                             </thead>
                             <tbody id="body-totales">
-                                <tr><td colspan="3" style="text-align: center; color: #64748b;">Cargando resumen...</td></tr>
+                                <tr><td colspan="2" style="text-align: center; color: #64748b;">Cargando resumen...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -108,7 +101,7 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN 2: HISTORIAL GENERAL CON BUSCADOR (Por Fecha y Nombre) -->
+            <!-- SECCIÓN 2: HISTORIAL GENERAL CON BUSCADOR -->
             <section id="seccion-historial" class="content-section" style="display: none;">
                 <header class="content-header">
                     <h2>Historial y Buscador General</h2>
