@@ -36,14 +36,23 @@ const userDisplay = document.getElementById('user-display');
 
 let cacheSalidas = [];
 
+// Función para abrir/cerrar el menú desplegable (hamburguesa) en celulares y PC
+window.toggleMenu = function() {
+    const menu = document.getElementById('dropdown-menu');
+    menu.classList.toggle('show');
+};
+
+// Control de Secciones y cierre automático del menú desplegable
 window.cambiarSeccion = function(seccion) {
     const secSalidas = document.getElementById('seccion-salidas');
     const secHistorial = document.getElementById('seccion-historial');
     const secUsuarios = document.getElementById('seccion-usuarios');
-    const botonesNav = document.querySelectorAll('.sidebar-nav .nav-item');
+    const botonesNav = document.querySelectorAll('.dropdown-menu .nav-item');
 
     botonesNav.forEach(btn => btn.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
 
     secSalidas.style.display = 'none';
     secHistorial.style.display = 'none';
@@ -58,6 +67,10 @@ window.cambiarSeccion = function(seccion) {
         secUsuarios.style.display = 'block';
         cargarListaUsuarios();
     }
+
+    // Ocultar el menú desplegable después de seleccionar una opción
+    const menu = document.getElementById('dropdown-menu');
+    if (menu) menu.classList.remove('show');
 };
 
 let sesionActiva = sessionStorage.getItem('sesion_autorizada');
@@ -114,6 +127,7 @@ formLogin.addEventListener('submit', async (e) => {
         mostrarAplicacion();
     } catch (error) {
         console.error("Error al iniciar sesión:", error);
+        alert("Error al conectar con la base de datos.");
     }
 });
 
@@ -348,8 +362,13 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
 });
 
 window.renderizarHistorialGeneral = function(lista) {
-    const textoBusqueda = document.getElementById('buscar-nombre').value.toLowerCase().trim();
-    const fechaFiltro = document.getElementById('filtro-fecha').value;
+    const textoBusquedaInput = document.getElementById('buscar-nombre');
+    const fechaFiltroInput = document.getElementById('filtro-fecha');
+    
+    const textoBusqueda = textoBusquedaInput ? textoBusquedaInput.value.toLowerCase().trim() : '';
+    const fechaFiltro = fechaFiltroInput ? fechaFiltroInput.value : '';
+    
+    if (!listaHistorialGeneral) return;
     listaHistorialGeneral.innerHTML = '';
 
     let filtrados = lista.filter(item => {

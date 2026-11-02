@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Salidas e Inventario</title>
-    <link rel="stylesheet" href="styles.css?v=5">
+    <link rel="stylesheet" href="styles.css?v=6">
     <!-- Firebase SDK v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -29,36 +29,39 @@
         </div>
     </div>
 
-    <!-- APLICACIÓN PRINCIPAL CON MENÚ LATERAL -->
+    <!-- APLICACIÓN PRINCIPAL -->
     <div id="main-app" class="app-layout" style="display: none;">
         
-        <!-- MENÚ LATERAL IZQUIERDO -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
+        <!-- BARRA SUPERIOR / MENÚ DESPLEGABLE -->
+        <header class="top-navbar">
+            <div class="nav-brand">
+                <button class="menu-toggle" onclick="toggleMenu()">☰</button>
                 <h3>📦 Inventario</h3>
+            </div>
+            <div class="nav-user-info">
                 <span id="user-display" class="user-badge"></span>
             </div>
-            <nav class="sidebar-nav">
-                <button class="nav-item active" onclick="cambiarSeccion('salidas')">📋 Registrar Salidas</button>
-                <button class="nav-item" onclick="cambiarSeccion('historial')">🔍 Historial y Buscador</button>
-                <button id="menu-admin-usuarios" class="nav-item" onclick="cambiarSeccion('usuarios')" style="display: none;">👥 Gestionar Usuarios</button>
-            </nav>
-            <div class="sidebar-footer">
-                <button id="btn-cambiar-pass" class="btn-secondary-small">🔒 Cambiar Clave</button>
-                <button id="btn-logout" class="btn-danger-small">🚪 Cerrar Sesión</button>
-            </div>
-        </aside>
+        </header>
+
+        <!-- MENÚ DESPLEGABLE (DRAWER / DROPDOWN) -->
+        <nav id="dropdown-menu" class="dropdown-menu">
+            <button class="nav-item active" onclick="cambiarSeccion('salidas')">📋 Registrar Salidas</button>
+            <button class="nav-item" onclick="cambiarSeccion('historial')">🔍 Historial y Buscador</button>
+            <button id="menu-admin-usuarios" class="nav-item" onclick="cambiarSeccion('usuarios')" style="display: none;">👥 Gestionar Usuarios</button>
+            <div class="menu-divider"></div>
+            <button id="btn-cambiar-pass" class="btn-secondary-small">🔒 Cambiar Clave</button>
+            <button id="btn-logout" class="btn-danger-small">🚪 Cerrar Sesión</button>
+        </nav>
 
         <!-- CONTENIDO PRINCIPAL -->
         <main class="main-content">
             
-            <!-- SECCIÓN 1: SALIDAS Y RESUMEN (Uno debajo del otro, sin precios) -->
+            <!-- SECCIÓN 1: SALIDAS Y RESUMEN -->
             <section id="seccion-salidas" class="content-section">
-                <header class="content-header">
+                <div class="content-header">
                     <h2>Registro de Salidas (Hoy)</h2>
-                </header>
+                </div>
 
-                <!-- Formulario de Salida (Arriba) -->
                 <div class="card full-width" style="margin-bottom: 20px;">
                     <h3>Nueva Salida</h3>
                     <form id="form-salida">
@@ -74,7 +77,6 @@
                     </form>
                 </div>
 
-                <!-- Totales del Día (Abajo) -->
                 <div class="card full-width" style="margin-bottom: 20px;">
                     <h3>Resumen del Día</h3>
                     <div class="table-container">
@@ -92,7 +94,6 @@
                     </div>
                 </div>
 
-                <!-- Historial exclusivo de hoy -->
                 <div class="card full-width">
                     <h3>Movimientos Realizados Hoy</h3>
                     <ul id="lista-historial-hoy" class="history-list">
@@ -103,15 +104,15 @@
 
             <!-- SECCIÓN 2: HISTORIAL GENERAL CON BUSCADOR -->
             <section id="seccion-historial" class="content-section" style="display: none;">
-                <header class="content-header">
+                <div class="content-header">
                     <h2>Historial y Buscador General</h2>
                     <p style="color: #64748b; font-size: 14px;">Busca registros pasados filtrando por nombre de producto o por fecha.</p>
-                </header>
+                </div>
 
                 <div class="card full-width" style="margin-bottom: 20px;">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="buscar-nombre">Buscar por Nombre de Producto:</label>
+                            <label for="buscar-nombre">Buscar por Nombre:</label>
                             <input type="text" id="buscar-nombre" placeholder="Ej. Cerveza Poker" oninput="filtrarHistorialGeneral()">
                         </div>
                         <div class="form-group">
@@ -131,10 +132,10 @@
 
             <!-- SECCIÓN 3: GESTIÓN DE USUARIOS (Solo Admin) -->
             <section id="seccion-usuarios" class="content-section" style="display: none;">
-                <header class="content-header">
+                <div class="content-header">
                     <h2>Gestión de Operadores</h2>
                     <p style="color: #64748b; font-size: 14px;">Crea y elimina las cuentas de los operadores del sistema.</p>
-                </header>
+                </div>
 
                 <div class="dashboard-grid">
                     <div class="card">
