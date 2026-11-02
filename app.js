@@ -36,7 +36,7 @@ const bodyTotales = document.getElementById('body-totales');
 const bodyUsuariosLista = document.getElementById('body-usuarios-lista');
 const userDisplay = document.getElementById('user-display');
 
-// Control de Secciones (Menú lateral)
+// Cambiar entre pestañas del menú lateral
 window.cambiarSeccion = function(seccion) {
     const secSalidas = document.getElementById('seccion-salidas');
     const secUsuarios = document.getElementById('seccion-usuarios');
@@ -47,11 +47,11 @@ window.cambiarSeccion = function(seccion) {
     if (seccion === 'salidas') {
         secSalidas.style.display = 'block';
         secUsuarios.style.display = 'none';
-        event.currentTarget.classList.add('active');
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
     } else if (seccion === 'usuarios' && rolActual === 'Administrador') {
         secSalidas.style.display = 'none';
         secUsuarios.style.display = 'block';
-        event.currentTarget.classList.add('active');
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
         cargarListaUsuarios();
     }
 };
@@ -94,7 +94,6 @@ formLogin.addEventListener('submit', async (e) => {
             usuarioActual = datosUsuario.nombre;
             rolActual = datosUsuario.rol;
         } else {
-            // Bootstrap inicial si la BD está vacía
             const snapshotUsuarios = await usuariosRef.get();
             if (snapshotUsuarios.empty && userId === 'admin' && passwordIngresada === 'admin123') {
                 await userDocRef.set({
@@ -138,7 +137,7 @@ function mostrarAplicacion() {
     }
 }
 
-// 2. Creación de nuevos Operadores (Automáticamente rol Operador)
+// 2. Creación de Operadores (Rol asignado automáticamente)
 if (formCrearUsuario) {
     formCrearUsuario.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -166,7 +165,7 @@ if (formCrearUsuario) {
             await userDocRef.set({
                 nombre: nombreNuevo,
                 password: passNueva,
-                rol: 'Operador', // Asignado automáticamente por requerimiento
+                rol: 'Operador',
                 creado: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -181,7 +180,7 @@ if (formCrearUsuario) {
     });
 }
 
-// Cargar lista de usuarios en la tabla del panel Admin
+// Cargar tabla de usuarios
 async function cargarListaUsuarios() {
     if (rolActual !== 'Administrador') return;
 
@@ -200,7 +199,6 @@ async function cargarListaUsuarios() {
             
             let botonAccion = '<span style="color: #94a3b8; font-size: 12px;">Principal</span>';
             
-            // Permitir eliminar únicamente si NO es el Administrador principal
             if (usr.rol !== 'Administrador') {
                 botonAccion = `<button onclick="eliminarUsuario('${docId}', '${usr.nombre}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">🗑️ Eliminar</button>`;
             }
@@ -221,7 +219,7 @@ async function cargarListaUsuarios() {
     }
 }
 
-// Eliminar usuario operador
+// Eliminar operador
 window.eliminarUsuario = async function(id, nombre) {
     if (confirm(`¿Estás seguro de eliminar al operador "${nombre}"? Perderá el acceso al sistema.`)) {
         try {
@@ -235,7 +233,7 @@ window.eliminarUsuario = async function(id, nombre) {
     }
 };
 
-// 3. Cambiar la contraseña propia
+// 3. Cambiar clave propia
 btnCambiarPass.addEventListener('click', async () => {
     const nuevaPassword = prompt("Ingresa tu nueva contraseña:");
     if (!nuevaPassword || nuevaPassword.trim() === "") return;
@@ -262,7 +260,7 @@ btnLogout.addEventListener('click', () => {
     inputPassword.value = '';
 });
 
-// 5. Registrar nueva salida de inventario
+// 5. Registrar salida
 formSalida.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -298,7 +296,7 @@ formSalida.addEventListener('submit', async (e) => {
     }
 });
 
-// Eliminar registros de salidas (Solo Admin)
+// Eliminar salida (Solo Admin)
 window.eliminarRegistro = async function(id) {
     if (rolActual !== 'Administrador') {
         alert("No tienes permisos de Administrador para eliminar registros.");
@@ -315,7 +313,7 @@ window.eliminarRegistro = async function(id) {
     }
 };
 
-// 6. Escuchar Historial y Totales en Tiempo Real
+// 6. Historial y Totales en tiempo real
 salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     listaHistorial.innerHTML = '';
     
