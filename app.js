@@ -52,13 +52,17 @@ if (sesionActiva === 'true' && usuarioActual && rolActual) {
 // 1. Manejo de Inicio de Sesión
 formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
+    console.log("¡Se hizo clic en ingresar!"); // <-- Añade esto
+
     const nombreIngresado = inputUsuario.value.trim();
     const passwordIngresada = inputPassword.value.trim();
 
+    console.log("Intentando iniciar sesión con:", nombreIngresado); // <-- Añade esto
+
     if (!nombreIngresado || !passwordIngresada) return;
 
-    // Buscar coincidencia exacta por ID en minúsculas
     const userId = nombreIngresado.toLowerCase();
+    // ... el resto de tu código ...
 
     try {
         const userDocRef = usuariosRef.doc(userId);
@@ -317,7 +321,7 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
                 <br><strong style="color: #0f172a; font-size: 13px;">${formatoMoneda(totalFila)}</strong>
             </div>
         `;
-        listaHistorial.appendChild(li);
+        listaHistorial.appendChild(li);%
     });
 
     bodyTotales.innerHTML = '';
