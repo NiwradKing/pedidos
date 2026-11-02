@@ -241,7 +241,7 @@ input:focus {
     color: #ef4444;
 }
 
-/* Tablas y Historial */
+/* Tablas e Historial */
 .table-container {
     overflow-x: auto;
 }
@@ -262,7 +262,7 @@ th {
 
 .history-list {
     list-style: none;
-    max-height: 300px;
+    max-height: 350px;
     overflow-y: auto;
 }
 

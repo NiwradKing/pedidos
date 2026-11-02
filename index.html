@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Salidas e Inventario</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=3">
     <!-- Firebase SDK v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -40,6 +40,7 @@
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-item active" onclick="cambiarSeccion('salidas')">📋 Registrar Salidas</button>
+                <button class="nav-item" onclick="cambiarSeccion('historial')">🔍 Historial y Buscador</button>
                 <button id="menu-admin-usuarios" class="nav-item" onclick="cambiarSeccion('usuarios')" style="display: none;">👥 Gestionar Usuarios</button>
             </nav>
             <div class="sidebar-footer">
@@ -51,10 +52,10 @@
         <!-- CONTENIDO PRINCIPAL -->
         <main class="main-content">
             
-            <!-- SECCIÓN 1: SALIDAS E HISTORIAL -->
+            <!-- SECCIÓN 1: SALIDAS Y RESUMEN DEL DÍA -->
             <section id="seccion-salidas" class="content-section">
                 <header class="content-header">
-                    <h2>Registro de Salidas</h2>
+                    <h2>Registro de Salidas (Hoy)</h2>
                 </header>
 
                 <div class="dashboard-grid">
@@ -100,24 +101,45 @@
                     </div>
                 </div>
 
-                <!-- Historial general -->
+                <!-- Historial exclusivo de hoy -->
                 <div class="card full-width">
-                    <h3>Historial de Movimientos</h3>
-                    <ul id="lista-historial" class="history-list">
-                        <li style="text-align:center; color:#64748b;">Cargando historial...</li>
+                    <h3>Movimientos Realizados Hoy</h3>
+                    <ul id="lista-historial-hoy" class="history-list">
+                        <li style="text-align:center; color:#64748b;">Cargando movimientos de hoy...</li>
                     </ul>
                 </div>
             </section>
 
-            <!-- SECCIÓN 2: GESTIÓN DE USUARIOS (Solo Admin) -->
+            <!-- SECCIÓN 2: HISTORIAL GENERAL CON BUSCADOR POR FECHA -->
+            <section id="seccion-historial" class="content-section" style="display: none;">
+                <header class="content-header">
+                    <h2>Historial y Buscador por Fecha</h2>
+                    <p style="color: #64748b; font-size: 14px;">Consulta todos los registros pasados filtrando por fecha específica.</p>
+                </header>
+
+                <div class="card full-width" style="margin-bottom: 20px;">
+                    <div class="form-group" style="max-width: 300px; margin-bottom: 0;">
+                        <label for="filtro-fecha">Filtrar por fecha:</label>
+                        <input type="date" id="filtro-fecha" onchange="filtrarHistorialPorFecha()">
+                    </div>
+                </div>
+
+                <div class="card full-width">
+                    <h3>Resultados del Historial</h3>
+                    <ul id="lista-historial-general" class="history-list">
+                        <li style="text-align:center; color:#64748b;">Selecciona una fecha o visualiza el archivo completo.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 3: GESTIÓN DE USUARIOS (Solo Admin) -->
             <section id="seccion-usuarios" class="content-section" style="display: none;">
                 <header class="content-header">
                     <h2>Gestión de Operadores</h2>
-                    <p style="color: #64748b; font-size: 14px;">Crea cuentas de acceso rápido para los operadores del sistema.</p>
+                    <p style="color: #64748b; font-size: 14px;">Crea y elimina las cuentas de los operadores del sistema.</p>
                 </header>
 
                 <div class="dashboard-grid">
-                    <!-- Formulario Crear Operador -->
                     <div class="card">
                         <h3>Registrar Nuevo Operador</h3>
                         <form id="form-crear-usuario">
@@ -133,7 +155,6 @@
                         </form>
                     </div>
 
-                    <!-- Lista de Usuarios Existentes -->
                     <div class="card">
                         <h3>Usuarios Registrados</h3>
                         <div class="table-container">

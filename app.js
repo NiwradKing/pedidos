@@ -1,4 +1,3 @@
-// Configuración de tu proyecto de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDy1bb0WVL9_HYg59TuA0dIi1d4ekVIa0E",
     authDomain: "registro-de-salidas-884cf.firebaseapp.com",
@@ -9,7 +8,6 @@ const firebaseConfig = {
     measurementId: "G-Y5HZCX7FRT"
 };
 
-// Inicialización de Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -18,7 +16,6 @@ const db = firebase.firestore();
 const salidasRef = db.collection('salidas');
 const usuariosRef = db.collection('usuarios');
 
-// Elementos DOM
 const loginScreen = document.getElementById('login-screen');
 const mainApp = document.getElementById('main-app');
 const menuAdminUsuarios = document.getElementById('menu-admin-usuarios');
@@ -31,37 +28,43 @@ const btnLogout = document.getElementById('btn-logout');
 const btnCambiarPass = document.getElementById('btn-cambiar-pass');
 
 const formSalida = document.getElementById('form-salida');
-const listaHistorial = document.getElementById('lista-historial');
+const listaHistorialHoy = document.getElementById('lista-historial-hoy');
+const listaHistorialGeneral = document.getElementById('lista-historial-general');
 const bodyTotales = document.getElementById('body-totales');
 const bodyUsuariosLista = document.getElementById('body-usuarios-lista');
 const userDisplay = document.getElementById('user-display');
 
-// Cambiar entre pestañas del menú lateral
+let cacheSalidas = []; // Guardar datos para el buscador
+
+// Control de Secciones (Menú lateral)
 window.cambiarSeccion = function(seccion) {
     const secSalidas = document.getElementById('seccion-salidas');
+    const secHistorial = document.getElementById('seccion-historial');
     const secUsuarios = document.getElementById('seccion-usuarios');
-    const botonesNav = document.querySelectorAll('.nav-item');
+    const botonesNav = document.querySelectorAll('.sidebar-nav .nav-item');
 
     botonesNav.forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    secSalidas.style.display = 'none';
+    secHistorial.style.display = 'none';
+    secUsuarios.style.display = 'none';
 
     if (seccion === 'salidas') {
         secSalidas.style.display = 'block';
-        secUsuarios.style.display = 'none';
-        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+    } else if (seccion === 'historial') {
+        secHistorial.style.display = 'block';
+        renderizarHistorialGeneral(cacheSalidas);
     } else if (seccion === 'usuarios' && rolActual === 'Administrador') {
-        secSalidas.style.display = 'none';
         secUsuarios.style.display = 'block';
-        if (event && event.currentTarget) event.currentTarget.classList.add('active');
         cargarListaUsuarios();
     }
 };
 
-// Formato de moneda COP
 const formatoMoneda = (valor) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
 };
 
-// Estado de sesión local
 let sesionActiva = sessionStorage.getItem('sesion_autorizada');
 let usuarioActual = localStorage.getItem('usuario_salidas');
 let rolActual = localStorage.getItem('rol_salidas');
@@ -70,7 +73,6 @@ if (sesionActiva === 'true' && usuarioActual && rolActual) {
     mostrarAplicacion();
 }
 
-// 1. Manejo de Inicio de Sesión
 formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nombreIngresado = inputUsuario.value.trim();
@@ -137,19 +139,14 @@ function mostrarAplicacion() {
     }
 }
 
-// 2. Creación de Operadores (Rol asignado automáticamente)
+// Crear Operador
 if (formCrearUsuario) {
     formCrearUsuario.addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        if (rolActual !== 'Administrador') {
-            alert("No tienes permisos para crear usuarios.");
-            return;
-        }
+        if (rolActual !== 'Administrador') return;
 
         const nombreNuevo = document.getElementById('nuevo-user-nombre').value.trim();
         const passNueva = document.getElementById('nuevo-user-pass').value.trim();
-
         if (!nombreNuevo || !passNueva) return;
 
         const nuevoUserId = nombreNuevo.toLowerCase().replace(/\s+/g, '_');
@@ -172,7 +169,6 @@ if (formCrearUsuario) {
             alert(`¡Operador "${nombreNuevo}" creado con éxito!`);
             formCrearUsuario.reset();
             cargarListaUsuarios();
-
         } catch (error) {
             console.error("Error al crear operador:", error);
             alert("No se pudo registrar el usuario.");
@@ -180,29 +176,22 @@ if (formCrearUsuario) {
     });
 }
 
-// Cargar tabla de usuarios
 async function cargarListaUsuarios() {
     if (rolActual !== 'Administrador') return;
-
     try {
         const snapshot = await usuariosRef.get();
         bodyUsuariosLista.innerHTML = '';
-
         if (snapshot.empty) {
-            bodyUsuariosLista.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No hay usuarios registrados.</td></tr>';
+            bodyUsuariosLista.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No hay usuarios.</td></tr>';
             return;
         }
-
         snapshot.forEach((doc) => {
             const usr = doc.data();
             const docId = doc.id;
-            
             let botonAccion = '<span style="color: #94a3b8; font-size: 12px;">Principal</span>';
-            
             if (usr.rol !== 'Administrador') {
                 botonAccion = `<button onclick="eliminarUsuario('${docId}', '${usr.nombre}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">🗑️ Eliminar</button>`;
             }
-
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #f1f5f9';
             tr.innerHTML = `
@@ -212,46 +201,36 @@ async function cargarListaUsuarios() {
             `;
             bodyUsuariosLista.appendChild(tr);
         });
-
     } catch (error) {
         console.error("Error al cargar usuarios:", error);
-        bodyUsuariosLista.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red;">Error al cargar lista.</td></tr>';
     }
 }
 
-// Eliminar operador
 window.eliminarUsuario = async function(id, nombre) {
-    if (confirm(`¿Estás seguro de eliminar al operador "${nombre}"? Perderá el acceso al sistema.`)) {
+    if (confirm(`¿Estás seguro de eliminar al operador "${nombre}"?`)) {
         try {
             await usuariosRef.doc(id).delete();
-            alert("Usuario eliminado correctamente.");
             cargarListaUsuarios();
         } catch (error) {
-            console.error("Error al eliminar usuario:", error);
-            alert("No se pudo eliminar el usuario.");
+            alert("No se pudo eliminar.");
         }
     }
 };
 
-// 3. Cambiar clave propia
 btnCambiarPass.addEventListener('click', async () => {
     const nuevaPassword = prompt("Ingresa tu nueva contraseña:");
     if (!nuevaPassword || nuevaPassword.trim() === "") return;
-
     const userId = usuarioActual.toLowerCase().replace(/\s+/g, '_');
-
-    if (confirm(`¿Confirmas actualizar tu contraseña, ${usuarioActual}?`)) {
+    if (confirm(`¿Confirmas actualizar tu contraseña?`)) {
         try {
             await usuariosRef.doc(userId).update({ password: nuevaPassword.trim() });
             alert("¡Contraseña actualizada con éxito!");
         } catch (error) {
-            console.error("Error al actualizar la contraseña:", error);
             alert("No se pudo actualizar la clave.");
         }
     }
 });
 
-// 4. Cerrar Sesión
 btnLogout.addEventListener('click', () => {
     sessionStorage.removeItem('sesion_autorizada');
     mainApp.style.display = 'none';
@@ -260,10 +239,8 @@ btnLogout.addEventListener('click', () => {
     inputPassword.value = '';
 });
 
-// 5. Registrar salida
 formSalida.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const productoInput = document.getElementById('producto-nombre');
     const cantidadInput = document.getElementById('cantidad-salida');
     const precioInput = document.getElementById('precio-salida');
@@ -287,61 +264,57 @@ formSalida.addEventListener('submit', async (e) => {
             rol: rolActual,
             fecha: firebase.firestore.FieldValue.serverTimestamp()
         });
-
         formSalida.reset();
         cantidadInput.value = "1";
     } catch (error) {
-        console.error("Error al registrar la salida: ", error);
         alert("Ocurrió un error al guardar el registro.");
     }
 });
 
-// Eliminar salida (Solo Admin)
 window.eliminarRegistro = async function(id) {
     if (rolActual !== 'Administrador') {
-        alert("No tienes permisos de Administrador para eliminar registros.");
+        alert("No tienes permisos de Administrador.");
         return;
     }
-
-    if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
+    if (confirm("¿Estás seguro de eliminar este registro?")) {
         try {
             await salidasRef.doc(id).delete();
         } catch (error) {
-            console.error("Error al eliminar: ", error);
-            alert("No se pudo eliminar el registro.");
+            alert("No se pudo eliminar.");
         }
     }
 };
 
-// 6. Historial y Totales en tiempo real
+// Escuchar Historial en tiempo real y separar el de Hoy
 salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
-    listaHistorial.innerHTML = '';
+    listaHistorialHoy.innerHTML = '';
+    cacheSalidas = [];
     
     if (snapshot.empty) {
-        listaHistorial.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No hay registros de salidas aún.</li>';
-        bodyTotales.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td></tr>';
+        listaHistorialHoy.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No hay registros hoy.</li>';
+        bodyTotales.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No hay salidas hoy.</td></tr>';
         return;
     }
 
     const hoyStr = new Date().toDateString();
     const totalesHoy = {};
+    let hayMovimientosHoy = false;
 
     snapshot.forEach((doc) => {
         const item = doc.data();
         const docId = doc.id;
+        cacheSalidas.push({ id: docId, ...item });
         
         let fechaFormateada = 'Procesando...';
         let esDeHoy = false;
+        let fechaIsoStr = '';
 
         if (item.fecha) {
             const dateObj = item.fecha.toDate();
             fechaFormateada = dateObj.toLocaleString('es-CO', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
+            fechaIsoStr = dateObj.toISOString().split('T')[0]; // Formato YYYY-MM-DD para buscador
 
             if (dateObj.toDateString() === hoyStr) {
                 esDeHoy = true;
@@ -351,50 +324,51 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
         const precioUnitario = item.precioUnitario || 0;
         const totalFila = item.totalPrecio || (item.cantidad * precioUnitario);
 
-        if (esDeHoy && item.producto) {
+        // Si es de hoy, calcular totales y agregarlo a la lista de hoy
+        if (esDeHoy) {
+            hayMovimientosHoy = true;
             const claveProd = item.producto.trim();
             if (!totalesHoy[claveProd]) {
                 totalesHoy[claveProd] = { cantidad: 0, dinero: 0 };
             }
             totalesHoy[claveProd].cantidad += (item.cantidad || 0);
             totalesHoy[claveProd].dinero += totalFila;
-        }
 
-        let botonEliminar = '';
-        if (rolActual === 'Administrador') {
-            botonEliminar = `<button onclick="eliminarRegistro('${docId}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-top:5px;">🗑️ Eliminar</button>`;
-        }
+            let botonEliminar = rolActual === 'Administrador' ? `<button onclick="eliminarRegistro('${docId}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-top:5px;">🗑️ Eliminar</button>` : '';
 
-        const li = document.createElement('li');
-        li.className = 'item-row';
-        li.innerHTML = `
-            <div>
-                <span class="item-name">${item.producto}</span>
-                <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong> (${item.rol || 'Operador'})</small>
-                <br><small style="color:#64748b;">Precio c/u: ${formatoMoneda(precioUnitario)}</small>
-                <br><small style="color:#94a3b8;">${fechaFormateada}</small>
-                ${botonEliminar ? '<br>' + botonEliminar : ''}
-            </div>
-            <div style="text-align: right;">
-                <span class="stock-badge">-${item.cantidad} u.</span>
-                <br><strong style="color: #0f172a; font-size: 13px;">${formatoMoneda(totalFila)}</strong>
-            </div>
-        `;
-        listaHistorial.appendChild(li);
+            const li = document.createElement('li');
+            li.className = 'item-row';
+            li.innerHTML = `
+                <div>
+                    <span class="item-name">${item.producto}</span>
+                    <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong> (${item.rol || 'Operador'})</small>
+                    <br><small style="color:#64748b;">Precio c/u: ${formatoMoneda(precioUnitario)}</small>
+                    <br><small style="color:#94a3b8;">${fechaFormateada}</small>
+                    ${botonEliminar ? '<br>' + botonEliminar : ''}
+                </div>
+                <div style="text-align: right;">
+                    <span class="stock-badge">-${item.cantidad} u.</span>
+                    <br><strong style="color: #0f172a; font-size: 13px;">${formatoMoneda(totalFila)}</strong>
+                </div>
+            `;
+            listaHistorialHoy.appendChild(li);
+        }
     });
 
+    if (!hayMovimientosHoy) {
+        listaHistorialHoy.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No hay registros de salidas en el día de hoy.</li>';
+    }
+
+    // Renderizar Totales del Día
     bodyTotales.innerHTML = '';
     const productosHoy = Object.keys(totalesHoy);
-
     if (productosHoy.length === 0) {
         bodyTotales.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 10px; color: #64748b;">No hay salidas registradas hoy.</td></tr>';
     } else {
         let granTotalDinero = 0;
-
         productosHoy.forEach((prod) => {
             const datos = totalesHoy[prod];
             granTotalDinero += datos.dinero;
-
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #f1f5f9';
             tr.innerHTML = `
@@ -415,7 +389,59 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
         bodyTotales.appendChild(trTotal);
     }
 
-}, (error) => {
-    console.error("Error al obtener historial: ", error);
-    listaHistorial.innerHTML = `<li style="color:red; text-align:center; padding: 10px;">Error al cargar historial: ${error.message}</li>`;
+    // Actualizar historial general si está abierto
+    renderizarHistorialGeneral(cacheSalidas);
 });
+
+// Función para renderizar el historial general y aplicar buscador por fecha
+window.renderizarHistorialGeneral = function(lista) {
+    const fechaFiltro = document.getElementById('filtro-fecha').value;
+    listaHistorialGeneral.innerHTML = '';
+
+    let filtrados = lista;
+    if (fechaFiltro) {
+        filtrados = lista.filter(item => {
+            if (!item.fecha) return false;
+            const itemDateStr = item.fecha.toDate().toISOString().split('T')[0];
+            return itemDateStr === fechaFiltro;
+        });
+    }
+
+    if (filtrados.length === 0) {
+        listaHistorialGeneral.innerHTML = '<li style="text-align:center; color:#64748b; padding: 10px;">No se encontraron registros para esta fecha.</li>';
+        return;
+    }
+
+    filtrados.forEach((item) => {
+        let fechaFormateada = 'Procesando...';
+        if (item.fecha) {
+            fechaFormateada = item.fecha.toDate().toLocaleString('es-CO', {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+        }
+        const precioUnitario = item.precioUnitario || 0;
+        const totalFila = item.totalPrecio || (item.cantidad * precioUnitario);
+        let botonEliminar = rolActual === 'Administrador' ? `<button onclick="eliminarRegistro('${item.id}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-top:5px;">🗑️ Eliminar</button>` : '';
+
+        const li = document.createElement('li');
+        li.className = 'item-row';
+        li.innerHTML = `
+            <div>
+                <span class="item-name">${item.producto}</span>
+                <br><small style="color:#64748b;">Retirado por: <strong>${item.usuario}</strong> (${item.rol || 'Operador'})</small>
+                <br><small style="color:#64748b;">Precio c/u: ${formatoMoneda(precioUnitario)}</small>
+                <br><small style="color:#94a3b8;">${fechaFormateada}</small>
+                ${botonEliminar ? '<br>' + botonEliminar : ''}
+            </div>
+            <div style="text-align: right;">
+                <span class="stock-badge">-${item.cantidad} u.</span>
+                <br><strong style="color: #0f172a; font-size: 13px;">${formatoMoneda(totalFila)}</strong>
+            </div>
+        `;
+        listaHistorialGeneral.appendChild(li);
+    });
+};
+
+window.filtrarHistorialPorFecha = function() {
+    renderizarHistorialGeneral(cacheSalidas);
+};
