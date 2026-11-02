@@ -21,7 +21,7 @@ const usuariosRef = db.collection('usuarios');
 // Elementos DOM
 const loginScreen = document.getElementById('login-screen');
 const mainApp = document.getElementById('main-app');
-const adminPanel = document.getElementById('admin-panel');
+const menuAdminUsuarios = document.getElementById('menu-admin-usuarios');
 const formLogin = document.getElementById('form-login');
 const formCrearUsuario = document.getElementById('form-crear-usuario');
 
@@ -33,7 +33,28 @@ const btnCambiarPass = document.getElementById('btn-cambiar-pass');
 const formSalida = document.getElementById('form-salida');
 const listaHistorial = document.getElementById('lista-historial');
 const bodyTotales = document.getElementById('body-totales');
+const bodyUsuariosLista = document.getElementById('body-usuarios-lista');
 const userDisplay = document.getElementById('user-display');
+
+// Control de Secciones (Menú lateral)
+window.cambiarSeccion = function(seccion) {
+    const secSalidas = document.getElementById('seccion-salidas');
+    const secUsuarios = document.getElementById('seccion-usuarios');
+    const botonesNav = document.querySelectorAll('.nav-item');
+
+    botonesNav.forEach(btn => btn.classList.remove('active'));
+
+    if (seccion === 'salidas') {
+        secSalidas.style.display = 'block';
+        secUsuarios.style.display = 'none';
+        event.currentTarget.classList.add('active');
+    } else if (seccion === 'usuarios' && rolActual === 'Administrador') {
+        secSalidas.style.display = 'none';
+        secUsuarios.style.display = 'block';
+        event.currentTarget.classList.add('active');
+        cargarListaUsuarios();
+    }
+};
 
 // Formato de moneda COP
 const formatoMoneda = (valor) => {
@@ -73,6 +94,7 @@ formLogin.addEventListener('submit', async (e) => {
             usuarioActual = datosUsuario.nombre;
             rolActual = datosUsuario.rol;
         } else {
+            // Bootstrap inicial si la BD está vacía
             const snapshotUsuarios = await usuariosRef.get();
             if (snapshotUsuarios.empty && userId === 'admin' && passwordIngresada === 'admin123') {
                 await userDocRef.set({
@@ -90,7 +112,6 @@ formLogin.addEventListener('submit', async (e) => {
             }
         }
 
-        // Guardar estado de sesión
         localStorage.setItem('usuario_salidas', usuarioActual);
         localStorage.setItem('rol_salidas', rolActual);
         sessionStorage.setItem('sesion_autorizada', 'true');
@@ -107,17 +128,17 @@ formLogin.addEventListener('submit', async (e) => {
 
 function mostrarAplicacion() {
     loginScreen.style.display = 'none';
-    mainApp.style.display = 'block';
+    mainApp.style.display = 'flex';
     userDisplay.textContent = `${usuarioActual} (${rolActual})`;
 
     if (rolActual === 'Administrador') {
-        adminPanel.style.display = 'block';
+        menuAdminUsuarios.style.display = 'block';
     } else {
-        adminPanel.style.display = 'none';
+        menuAdminUsuarios.style.display = 'none';
     }
 }
 
-// 2. Creación de nuevos usuarios desde el Panel de Administrador
+// 2. Creación de nuevos Operadores (Automáticamente rol Operador)
 if (formCrearUsuario) {
     formCrearUsuario.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -129,7 +150,6 @@ if (formCrearUsuario) {
 
         const nombreNuevo = document.getElementById('nuevo-user-nombre').value.trim();
         const passNueva = document.getElementById('nuevo-user-pass').value.trim();
-        const rolNuevo = document.getElementById('nuevo-user-rol').value;
 
         if (!nombreNuevo || !passNueva) return;
 
@@ -138,15 +158,6 @@ if (formCrearUsuario) {
 
         try {
             const docSnap = await userDocRef.get();
-
-            if (rolNuevo === 'Administrador') {
-                const adminCheck = await usuariosRef.where('rol', '==', 'Administrador').get();
-                if (!adminCheck.empty && !docSnap.exists) {
-                    alert("Ya existe un Administrador registrado. Solo se permite un Administrador principal.");
-                    return;
-                }
-            }
-
             if (docSnap.exists) {
                 alert(`El usuario "${nombreNuevo}" ya existe.`);
                 return;
@@ -155,19 +166,74 @@ if (formCrearUsuario) {
             await userDocRef.set({
                 nombre: nombreNuevo,
                 password: passNueva,
-                rol: rolNuevo,
+                rol: 'Operador', // Asignado automáticamente por requerimiento
                 creado: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            alert(`¡Usuario "${nombreNuevo}" (${rolNuevo}) creado con éxito!`);
+            alert(`¡Operador "${nombreNuevo}" creado con éxito!`);
             formCrearUsuario.reset();
+            cargarListaUsuarios();
 
         } catch (error) {
-            console.error("Error al crear usuario:", error);
+            console.error("Error al crear operador:", error);
             alert("No se pudo registrar el usuario.");
         }
     });
 }
+
+// Cargar lista de usuarios en la tabla del panel Admin
+async function cargarListaUsuarios() {
+    if (rolActual !== 'Administrador') return;
+
+    try {
+        const snapshot = await usuariosRef.get();
+        bodyUsuariosLista.innerHTML = '';
+
+        if (snapshot.empty) {
+            bodyUsuariosLista.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No hay usuarios registrados.</td></tr>';
+            return;
+        }
+
+        snapshot.forEach((doc) => {
+            const usr = doc.data();
+            const docId = doc.id;
+            
+            let botonAccion = '<span style="color: #94a3b8; font-size: 12px;">Principal</span>';
+            
+            // Permitir eliminar únicamente si NO es el Administrador principal
+            if (usr.rol !== 'Administrador') {
+                botonAccion = `<button onclick="eliminarUsuario('${docId}', '${usr.nombre}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">🗑️ Eliminar</button>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f1f5f9';
+            tr.innerHTML = `
+                <td style="padding: 10px; font-weight: 600;">${usr.nombre}</td>
+                <td style="padding: 10px; color: ${usr.rol === 'Administrador' ? '#2563eb' : '#475569'};">${usr.rol}</td>
+                <td style="padding: 10px; text-align: right;">${botonAccion}</td>
+            `;
+            bodyUsuariosLista.appendChild(tr);
+        });
+
+    } catch (error) {
+        console.error("Error al cargar usuarios:", error);
+        bodyUsuariosLista.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red;">Error al cargar lista.</td></tr>';
+    }
+}
+
+// Eliminar usuario operador
+window.eliminarUsuario = async function(id, nombre) {
+    if (confirm(`¿Estás seguro de eliminar al operador "${nombre}"? Perderá el acceso al sistema.`)) {
+        try {
+            await usuariosRef.doc(id).delete();
+            alert("Usuario eliminado correctamente.");
+            cargarListaUsuarios();
+        } catch (error) {
+            console.error("Error al eliminar usuario:", error);
+            alert("No se pudo eliminar el usuario.");
+        }
+    }
+};
 
 // 3. Cambiar la contraseña propia
 btnCambiarPass.addEventListener('click', async () => {
@@ -191,7 +257,7 @@ btnCambiarPass.addEventListener('click', async () => {
 btnLogout.addEventListener('click', () => {
     sessionStorage.removeItem('sesion_autorizada');
     mainApp.style.display = 'none';
-    loginScreen.style.display = 'block';
+    loginScreen.style.display = 'flex';
     inputUsuario.value = '';
     inputPassword.value = '';
 });
@@ -232,7 +298,7 @@ formSalida.addEventListener('submit', async (e) => {
     }
 });
 
-// Eliminar registros (Solo Admin)
+// Eliminar registros de salidas (Solo Admin)
 window.eliminarRegistro = async function(id) {
     if (rolActual !== 'Administrador') {
         alert("No tienes permisos de Administrador para eliminar registros.");
@@ -355,4 +421,3 @@ salidasRef.orderBy('fecha', 'desc').onSnapshot((snapshot) => {
     console.error("Error al obtener historial: ", error);
     listaHistorial.innerHTML = `<li style="color:red; text-align:center; padding: 10px;">Error al cargar historial: ${error.message}</li>`;
 });
-
