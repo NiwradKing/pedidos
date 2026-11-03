@@ -1,17 +1,22 @@
+// Tus nuevas credenciales de Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyDy1bb0WVL9_HYg59TuA0dIi1d4ekVIa0E",
-    authDomain: "registro-de-salidas-884cf.firebaseapp.com",
-    projectId: "registro-de-salidas-884cf",
-    storageBucket: "registro-de-salidas-884cf.firebasestorage.app",
-    messagingSenderId: "922399897406",
-    appId: "1:922399897406:web:84c442683526839a4c5e6f",
-    measurementId: "G-Y5HZCX7FRT"
+    apiKey: "AIzaSyCAruwAlFxOf_MzN1LH6eYi-mZnfOMF2Ss",
+    authDomain: "registro-de-salidas-4535e.firebaseapp.com",
+    projectId: "registro-de-salidas-4535e",
+    storageBucket: "registro-de-salidas-4535e.firebasestorage.app",
+    messagingSenderId: "1007867019063",
+    appId: "1:1007867019063:web:5ef77cee4cd59f1724e4b2",
+    measurementId: "G-ELR64V8M7S"
 };
 
+// Inicializar Firebase (Versión Global SDK v8)
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
+const db = firebase.firestore();
+const salidasRef = db.collection('salidas');
+const usuariosRef = db.collection('usuarios');
 const db = firebase.firestore();
 const salidasRef = db.collection('salidas');
 const usuariosRef = db.collection('usuarios');
